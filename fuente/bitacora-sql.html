@@ -266,6 +266,9 @@ a.btn{text-decoration:none;display:inline-flex;align-items:center}
 .verify label{font-weight:700;font-size:.9rem}
 .verify input{font:inherit;padding:9px 11px;border:1px solid var(--rule);border-radius:5px;background:var(--code-bg);color:var(--ink)}
 .verify input:focus{outline:2px solid var(--pen);outline-offset:0}
+.xr-enunciado{border:1px dashed var(--rule);border-radius:5px;background:var(--paper);padding:14px 16px;display:flex;flex-direction:column;gap:8px;font-size:.95rem}
+.xr-enunciado ul{margin:0;padding-left:1.25em;display:flex;flex-direction:column;gap:4px}
+.ex-q p + .xr-enunciado{margin-top:8px}
 
 @media (max-width:860px){
   .app{grid-template-columns:minmax(0,1fr);gap:0}
@@ -474,9 +477,9 @@ INSERT INTO FacturaDetalle VALUES (1, 1, 9);   -- la pareja (1,1) ya existe: err
 <pre class="code">ALTER TABLE Entrenador ADD email VARCHAR(100);        -- agregar columna
 ALTER TABLE Entrenador DROP COLUMN email;              -- quitar columna
 ALTER TABLE Entrenador ALTER COLUMN nombre VARCHAR(80); -- cambiar tipo (solo SQL Server)
-ALTER TABLE Factura ADD CONSTRAINT FK_Factura_Cliente   -- agregar restricción (solo SQL Server)
+ALTER TABLE Factura ADD CONSTRAINT FK_Factura_Cliente   -- agregar restricción con nombre
   FOREIGN KEY (IDCliente) REFERENCES Cliente(IDCliente);</pre>
-    <p class="small">En SQL Server se escribe <code>ADD columna</code> sin la palabra COLUMN. SQLite acepta las dos primeras líneas, pero no <code>ALTER COLUMN</code> ni <code>ADD CONSTRAINT</code>: aquí declara las restricciones dentro del CREATE TABLE.</p>
+    <p class="small">En SQL Server se escribe <code>ADD columna</code> sin la palabra COLUMN. SQLite no tiene <code>ALTER COLUMN</code> ni <code>ADD CONSTRAINT</code>; este simulador sí acepta <code>ADD CONSTRAINT</code> (FOREIGN KEY, CHECK, UNIQUE y PRIMARY KEY), así que escríbelo como en SQL Server. <code>ALTER COLUMN</code> sigue sin estar.</p>
     <div class="cell" data-ds="pokemon"><textarea>
 ALTER TABLE Entrenador ADD email VARCHAR(100);
 UPDATE Entrenador SET email = 'ash@paleta.mx' WHERE nombre = 'Ash';
@@ -1572,13 +1575,13 @@ END CATCH</pre></div>
       <thead><tr><th>Para</th><th>SQL Server</th><th>SQLite</th></tr></thead>
       <tbody>
         <tr><td>Primeros n</td><td><code>SELECT TOP 5 …</code></td><td><code>… LIMIT 5</code> (aquí TOP se traduce solo)</td></tr>
-        <tr><td>ID automático</td><td><code>INT IDENTITY(1,1)</code></td><td><code>INTEGER PRIMARY KEY</code></td></tr>
+        <tr><td>ID automático</td><td><code>INT IDENTITY(1,1)</code></td><td><code>INTEGER PRIMARY KEY</code> (aquí IDENTITY también funciona)</td></tr>
         <tr><td>Unir texto</td><td><code>'a' + 'b'</code></td><td><code>'a' || 'b'</code></td></tr>
         <tr><td>Fecha actual</td><td><code>GETDATE()</code></td><td><code>date('now')</code> (aquí GETDATE también sirve)</td></tr>
         <tr><td>Largo de texto</td><td><code>LEN(x)</code></td><td><code>LENGTH(x)</code> (aquí LEN también sirve)</td></tr>
         <tr><td>Reemplazar NULL</td><td><code>ISNULL(x, 0)</code></td><td><code>IFNULL(x, 0)</code>; <code>COALESCE</code> sirve en ambos</td></tr>
         <tr><td>Cambiar tipo de columna</td><td><code>ALTER COLUMN</code></td><td>No existe</td></tr>
-        <tr><td>Agregar restricción después</td><td><code>ALTER TABLE … ADD CONSTRAINT</code></td><td>No existe: va en el CREATE TABLE</td></tr>
+        <tr><td>Agregar restricción después</td><td><code>ALTER TABLE … ADD CONSTRAINT</code></td><td>No existe (aquí se simula)</td></tr>
         <tr><td>Separador de lotes</td><td><code>GO</code></td><td>No existe (aquí se ignora)</td></tr>
         <tr><td>GROUP BY</td><td>Estricto: marca error</td><td>Permisivo: no avisa</td></tr>
         <tr><td>Comparar texto</td><td><code>'ash' = 'Ash'</code> es verdadero (ignora mayúsculas)</td><td>Es falso: distingue mayúsculas</td></tr>
@@ -1910,6 +1913,7 @@ const BLOQUES = [
   { id: 'sub', t: 'Subconsultas', d: 'Un valor, una lista o una tabla dentro de otra consulta.' },
   { id: 'tienda', t: 'Base del LAB: estilo examen', d: 'Las preguntas de tus diapositivas sobre facturas, más los cálculos con SUM del LAB.' },
   { id: 'algebra', t: 'Álgebra relacional → SQL', d: 'Traduce cada expresión. Recuerda que π quita duplicados.' },
+  { id: 'xr', t: 'Examen rápido', d: 'Scripts completos estilo examen. El corrector reconoce tus tablas por nombre y prueba tus reglas con datos.' },
   { id: 'proc', t: 'Procedimientos almacenados', d: 'Escribe el CREATE PROCEDURE. Tus pruebas con EXEC pueden ir debajo, después de un GO: para revisar se toma solo el procedimiento, se crea en una base limpia y se le hacen varias llamadas.' }
 ];
 const P2 = 'INSERT INTO Producto (IDProducto, Descripcion, PrecioUnitario, UnidadStock, IDCategoria, IDProveedor) VALUES ';
@@ -2727,7 +2731,7 @@ function prepareStatements(code){
     if (/\bISNULL\s*\(/i.test(s)) s = s.replace(/\bISNULL\s*\(/gi, 'IFNULL(');
     const top = s.match(/^SELECT\s+(DISTINCT\s+)?TOP\s*\(?\s*(\d+)\s*\)?\s+/i);
     if (top && !/\bLIMIT\s+\d+\s*$/i.test(s)) { s = 'SELECT ' + (top[1] || '') + s.slice(top[0].length) + ' LIMIT ' + top[2]; notes.push('TOP ' + top[2] + ' se tradujo a LIMIT ' + top[2] + '.'); }
-    if (/\bIDENTITY\b/i.test(s)) { s = s.replace(/\bIDENTITY\s*(\(\s*\d+\s*,\s*\d+\s*\))?/gi, ''); notes.push('Se quitó IDENTITY: en este simulador escribe tú los ID.'); }
+    if (/^CREATE\s+TABLE\b/i.test(s)) s = transformCreate(s);
     const tr = s.match(/^TRUNCATE\s+TABLE\s+/i);
     if (tr) { s = 'DELETE FROM ' + s.slice(tr[0].length); notes.push('TRUNCATE TABLE se ejecutó como DELETE FROM (SQLite no tiene TRUNCATE).'); }
     out.push({ sql: s, display, notes });
@@ -2736,7 +2740,7 @@ function prepareStatements(code){
 }
 function traducir(msg, sql){
   const s = sql || ''; let m;
-  if (/^ALTER\s+TABLE\b[\s\S]*\bADD\s+(CONSTRAINT|PRIMARY|FOREIGN|UNIQUE|CHECK)\b/i.test(s)) return 'SQLite no permite ALTER TABLE … ADD CONSTRAINT (SQL Server sí). Aquí declara esa restricción dentro del CREATE TABLE; también es válido en SQL Server.';
+  if (/syntax error/.test(msg) && /^ALTER\s+TABLE\b[\s\S]*\bADD\s+(CONSTRAINT|PRIMARY|FOREIGN|UNIQUE|CHECK)\b/i.test(s)) return 'Este ALTER TABLE … ADD CONSTRAINT no está en el simulador. Acepta FOREIGN KEY, CHECK, UNIQUE y PRIMARY KEY; un DEFAULT se declara en la columna, dentro del CREATE TABLE.';
   if (/^ALTER\s+TABLE\b[\s\S]*\bALTER\s+COLUMN\b/i.test(s)) return 'ALTER COLUMN existe en SQL Server pero no en SQLite.';
   if ((m = msg.match(/no such table: (\S+)/))) return 'No existe la tabla ' + m[1] + '. Revisa el nombre, o si la creas después de usarla.';
   if ((m = msg.match(/no such column: (\S+)/))) return 'No existe la columna ' + m[1] + '. Revisa cómo se llama. Si querías un texto, va entre comillas simples.';
@@ -2758,6 +2762,62 @@ function traducir(msg, sql){
   if (/SELECTs to the left and right/.test(msg)) return 'Las dos consultas de UNION, EXCEPT o INTERSECT deben tener el mismo número de columnas.';
   return msg;
 }
+/* CREATE TABLE de SQL Server → SQLite: IDENTITY, DEFAULT GETDATE(), columnas calculadas, CLUSTERED */
+function transformCreate(s){
+  const m = s.match(/^CREATE\s+TABLE\s+[^(]+\(/i); if (!m) return s;
+  const start = m[0].length; let d = 1, j = start, q = false;
+  for (; j < s.length; j++) { const c = s[j]; if (q) { if (c === "'") q = false; continue; } if (c === "'") { q = true; continue; } if (c === '(') d++; else if (c === ')') { d--; if (d === 0) break; } }
+  if (j >= s.length) return s;
+  const parts = []; let cur = '', dd = 0, qq = false;
+  for (const c of s.slice(start, j)) { if (qq) { cur += c; if (c === "'") qq = false; continue; } if (c === "'") { qq = true; cur += c; continue; } if (c === '(') dd++; else if (c === ')') dd--; if (c === ',' && dd === 0) { parts.push(cur); cur = ''; continue; } cur += c; }
+  parts.push(cur);
+  const out = parts.map(p => {
+    let t = p;
+    if (/\bIDENTITY\b/i.test(t)) {
+      t = t.replace(/\bIDENTITY\s*(\(\s*\d+\s*,\s*\d+\s*\))?/i, '');
+      t = t.replace(/^(\s*(?:\[[^\]]+\]|"[^"]+"|\w+)\s+)(?:(?:INT|BIGINT|SMALLINT|TINYINT)\b|(?:NUMERIC|DECIMAL)\s*\([^)]*\))/i, '$1INTEGER');
+    }
+    t = t.replace(/\bDEFAULT\s*\(?\s*GETDATE\s*\(\s*\)\s*\)?/i, 'DEFAULT CURRENT_TIMESTAMP');
+    const cm = t.match(/^(\s*(?:\[[^\]]+\]|"[^"]+"|\w+))\s+AS\s+(?!\()([\s\S]+?)(\s+PERSISTED)?\s*$/i);
+    if (cm) t = cm[1] + ' AS (' + cm[2] + ')';
+    return t.replace(/\bPERSISTED\b/i, 'STORED').replace(/\b(NON)?CLUSTERED\b/gi, '');
+  });
+  return s.slice(0, start) + out.join(',') + s.slice(j);
+}
+/* ALTER TABLE … ADD CONSTRAINT (FK, CHECK, UNIQUE, PK): SQLite no lo tiene, así que se reconstruye la tabla */
+function isAddConstraint(text){ return /^\s*ALTER\s+TABLE\b[\s\S]*?\bADD\s+(CONSTRAINT\b|FOREIGN\s+KEY|PRIMARY\s+KEY|UNIQUE\b|CHECK\b)/i.test(String(text)); }
+function alterAddConstraint(db, sql){
+  const ID = '(?:\\[[^\\]]+\\]|"[^"]+"|[\\w#$]+)';
+  const re = new RegExp('^ALTER\\s+TABLE\\s+(' + ID + '(?:\\s*\\.\\s*' + ID + ')?)\\s+(?:WITH\\s+(?:NO)?CHECK\\s+)?ADD\\s+((?:CONSTRAINT\\s+' + ID + '\\s+)?(?:FOREIGN\\s+KEY|PRIMARY\\s+KEY|UNIQUE|CHECK)\\b[\\s\\S]*)$', 'i');
+  const m = String(sql).trim().replace(/;\s*$/, '').match(re);
+  if (!m) return null;
+  const tname = m[1].split('.').pop().replace(/[\[\]"\s]/g, '');
+  const clause = m[2].replace(/\b(NON)?CLUSTERED\b/gi, '').trim();
+  const r = db.exec("SELECT name, sql FROM sqlite_master WHERE type = 'table' AND lower(name) = lower(?)", [tname]);
+  if (!r.length) throw new Error('no such table: ' + tname);
+  const name = r[0].values[0][0], create = String(r[0].values[0][1]);
+  const close = create.lastIndexOf(')'); const tmp = 'tsql_tmp_' + name;
+  const createTmp = create.slice(0, close).replace(/^\s*CREATE\s+TABLE\s+(?:"[^"]+"|\[[^\]]+\]|[^\s(]+)/i, 'CREATE TABLE ' + qid(tmp)) + ',\n  ' + clause + '\n)' + create.slice(close + 1);
+  const cols = pragmaRows(db, 'PRAGMA table_xinfo(' + qid(name) + ')').filter(c => !c.hidden).map(c => qid(c.name)).join(', ');
+  const fkOn = db.exec('PRAGMA foreign_keys')[0].values[0][0] === 1;
+  db.run('PRAGMA foreign_keys = OFF');
+  db.run('SAVEPOINT tsql_addc');
+  try {
+    db.run(createTmp);
+    db.run('INSERT INTO ' + qid(tmp) + ' (' + cols + ') SELECT ' + cols + ' FROM ' + qid(name));
+    db.run('DROP TABLE ' + qid(name));
+    db.run('ALTER TABLE ' + qid(tmp) + ' RENAME TO ' + qid(name));
+    const bad = db.exec('PRAGMA foreign_key_check(' + qid(name) + ')');
+    if (bad.length && bad[0].values.length) throw new Error('FOREIGN KEY constraint failed');
+    db.run('RELEASE tsql_addc');
+  } catch (e) {
+    try { db.run('ROLLBACK TO tsql_addc'); db.run('RELEASE tsql_addc'); } catch (_) {}
+    if (fkOn) db.run('PRAGMA foreign_keys = ON');
+    throw e;
+  }
+  if (fkOn) db.run('PRAGMA foreign_keys = ON');
+  return true;
+}
 function execAll(db, code){
   if (isTSQL(code)) return runTSQL(db, code);
   const results = [];
@@ -2765,6 +2825,7 @@ function execAll(db, code){
     if (st.skip) { results.push({ note: st.note, sql: st.display }); continue; }
     let s = null;
     try {
+      if (alterAddConstraint(db, st.sql)) { results.push({ sql: st.display, kw: 'ALTER', modified: null, notes: st.notes }); continue; }
       s = db.prepare(st.sql);
       const cols = s.getColumnNames();
       if (cols.length) {
@@ -3110,7 +3171,7 @@ function checkVars(nodes, scope){
 function skipNote(text){ return /^\s*(CREATE\s+DATABASE|USE)\b/i.test(text) ? 'Se ignora aquí: en SQL Server crea o abre la base; en este simulador la base ya está abierta.' : null; }
 function checkSyntax(nodes, scope, X){
   walkNodes(nodes, n => {
-    if ((n.t !== 'sql' && n.t !== 'selassign') || skipNote(n.text)) return;
+    if ((n.t !== 'sql' && n.t !== 'selassign') || skipNote(n.text) || isAddConstraint(n.text)) return;
     const txt = n.t === 'selassign' ? stripAssign(n.text).sql : n.text;
     let sql; try { sql = X.prep(txt, scope).sql; } catch (e) { if (e.tsql && e.line == null) e.line = n.line; throw e; }
     let s = null;
@@ -3168,7 +3229,7 @@ function coerceT(type, v){
   if (!m) return v; const b = m[1];
   const num = () => { if (typeof v === 'number') return v; const s = String(v).trim(); const x = Number(s); if (s === '' || isNaN(x)) throw tsErr("No se pudo convertir '" + v + "' al tipo " + b + '.', { abort: true, num: 245 }); return x; };
   if (/^(INT|INTEGER|BIGINT|SMALLINT|TINYINT)$/.test(b)) return Math.trunc(num());
-  if (b === 'BIT') return num() ? 1 : 0;
+  if (b === 'BIT') { if (typeof v === 'string' && /^\s*(true|false)\s*$/i.test(v)) return /true/i.test(v) ? 1 : 0; return num() ? 1 : 0; }
   if (/^(DECIMAL|NUMERIC)$/.test(b)) { const f = Math.pow(10, m[3] ? +m[3] : 0); return Math.round(num() * f) / f; }
   if (/^(MONEY|SMALLMONEY)$/.test(b)) return Math.round(num() * 10000) / 10000;
   if (/^(FLOAT|REAL)$/.test(b)) return num();
@@ -3179,7 +3240,7 @@ function tsTransform(s){
   s = s.replace(/\[?dbo\]?\s*\./gi, '');
   const top = s.match(/^SELECT\s+(DISTINCT\s+)?TOP\s*(?:\(\s*([^()]+?)\s*\)|(\d+))\s+/i);
   if (top && !/\bLIMIT\b/i.test(s)) s = 'SELECT ' + (top[1] || '') + s.slice(top[0].length) + ' LIMIT ' + (top[2] || top[3]);
-  if (/\bIDENTITY\b/i.test(s)) s = s.replace(/\bIDENTITY\s*(\(\s*\d+\s*,\s*\d+\s*\))?/gi, '');
+  if (/^CREATE\s+TABLE\b/i.test(s)) s = transformCreate(s);
   const tr = s.match(/^TRUNCATE\s+TABLE\s+/i); if (tr) s = 'DELETE FROM ' + s.slice(tr[0].length);
   return s;
 }
@@ -3301,6 +3362,12 @@ TX.prototype.execInner = function(n, scope){
     }
     case 'sql': {
       const note = skipNote(n.text); if (note) { this.out.push({ info: note }); return null; }
+      if (isAddConstraint(n.text)) {
+        const p = this.prep(n.text, scope); let done;
+        try { done = alterAddConstraint(this.db, p.sql); } catch (e) { if (e && e.tsql) throw e; throw sqliteToTs(String((e && e.message) || e), p.sql); }
+        if (!done) throw tsErr('Este ALTER TABLE … ADD CONSTRAINT no está en el simulador. Acepta FOREIGN KEY, CHECK, UNIQUE y PRIMARY KEY; un DEFAULT se declara en la columna, dentro del CREATE TABLE.', { abort: true });
+        const fl = n.text.replace(/\s+/g, ' ').trim(); this.out.push({ kw: 'ALTER', sql: fl.slice(0, 90) + (fl.length > 90 ? '…' : '') }); return null;
+      }
       const r = this.run(n.text, scope); const flat = n.text.replace(/\s+/g, ' ').trim(); const disp = flat.slice(0, 90) + (flat.length > 90 ? '…' : '');
       if (r.cols.length) { this.out.push({ columns: r.cols, rows: r.rows, sql: disp }); this.rowcount = r.rows.length; return null; }
       const dml = /^(INSERT|UPDATE|DELETE|MERGE)$/.test(n.kind);
@@ -3536,7 +3603,198 @@ function runProbe(ex, code, p){
   const b = execAll(db, p.sql); db.close();
   return { status: hadError(b) ? 'error' : 'ok', table: lastTable(b), msg: b.error || (b.errors && b.errors.length ? b.errors[0].message : '') };
 }
+/* ======================= EXAMEN RÁPIDO: corrector flexible ======================= */
+let xrN = 900;
+function xrDummy(c){ const ty = String(c.type || '').toUpperCase(); xrN++; if (/DATE|TIME/.test(ty)) return '2025-01-15'; if (/INT|DEC|NUM|MONEY|REAL|FLOA|DOUB|BIT/.test(ty)) return c.pk ? xrN : 1; return c.pk ? 'K' + xrN : 'X'; }
+function xrInfo(db, name){
+  if (!name) return null;
+  const cols = pragmaRows(db, 'PRAGMA table_xinfo(' + qid(name) + ')'); const pk = cols.filter(c => c.pk > 0);
+  const r = db.exec("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = ?", [name]);
+  return { name, cols, pk, fks: pragmaRows(db, 'PRAGMA foreign_key_list(' + qid(name) + ')'), sql: r.length ? String(r[0].values[0][0] || '') : '', rowid: pk.length === 1 && String(pk[0].type).toUpperCase() === 'INTEGER' };
+}
+function xrFind(db, X){
+  const r = db.exec("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'");
+  const names = r.length ? r[0].values.map(v => v[0]) : [];
+  const has = (n, ks) => ks.some(k => norm(n).indexOf(k) >= 0);
+  const d = names.find(n => has(n, X.det)) || null;
+  const e = names.find(n => n !== d && has(n, X.enc)) || null;
+  const c = names.find(n => n !== d && n !== e && has(n, X.cat)) || null;
+  const E = xrInfo(db, e), C = xrInfo(db, c), D = xrInfo(db, d);
+  const col = (I, f) => I ? (I.cols.find(k => f(norm(k.name), String(k.type || '').toUpperCase())) || null) : null;
+  return { E, C, D,
+    fecha: col(E, (n, t) => n.indexOf('fecha') >= 0 || /DATE|TIME/.test(t)),
+    sub: col(E, n => n.indexOf('sub') >= 0),
+    total: col(E, n => n.indexOf('total') >= 0 && n.indexOf('sub') < 0),
+    nueva: col(E, n => X.newcol.kw.some(k => n.indexOf(k) >= 0)),
+    cPrecio: col(C, n => /precio|costo|valor/.test(n)),
+    cant: col(D, n => n.indexOf('cant') >= 0),
+    dPrecio: col(D, n => /precio|costo|unitario/.test(n)),
+    dImporte: col(D, n => /importe|subtotal|total/.test(n) && !/precio/.test(n)),
+    fkE: D && E ? D.fks.find(f => norm(f.table) === norm(E.name)) || null : null,
+    fkC: D && C ? D.fks.find(f => norm(f.table) === norm(C.name)) || null : null };
+}
+function xrInsert(db, I, vals){
+  const use = {};
+  Object.keys(vals).forEach(k => { const c = I.cols.find(x => x.name === k); if (c && !c.hidden) use[k] = vals[k]; });
+  I.cols.forEach(c => { if (c.hidden || Object.prototype.hasOwnProperty.call(use, c.name)) return; if (I.rowid && c.pk) return; if (c.pk || (c.notnull && c.dflt_value == null)) use[c.name] = xrDummy(c); });
+  const names = Object.keys(use);
+  db.run('INSERT INTO ' + qid(I.name) + (names.length ? ' (' + names.map(qid).join(', ') + ') VALUES (' + names.map(() => '?').join(', ') + ')' : ' DEFAULT VALUES'), names.map(n => use[n]));
+  if (I.rowid) return db.exec('SELECT last_insert_rowid()')[0].values[0][0];
+  return I.pk.length === 1 ? use[I.pk[0].name] : null;
+}
+function xrSeed(db, F){
+  return {
+    prod: precio => { const v = {}; if (F.cPrecio) v[F.cPrecio.name] = precio; return xrInsert(db, F.C, v); },
+    venta: () => { const v = {}; if (F.fecha) v[F.fecha.name] = '2025-01-15'; if (F.sub) v[F.sub.name] = 0; if (F.total) v[F.total.name] = 0; return xrInsert(db, F.E, v); },
+    linea: (vid, pid, cant, precio) => { const v = {}; v[F.fkE.from] = vid; v[F.fkC.from] = pid; if (F.cant) v[F.cant.name] = cant; if (F.dPrecio) v[F.dPrecio.name] = precio; if (F.dImporte) v[F.dImporte.name] = cant * precio; return xrInsert(db, F.D, v); }
+  };
+}
+function xrUpdates(code, value){
+  const out = [];
+  splitBatches(code).forEach(b => {
+    const T = tok(b.text); if (!T.length || isProcHeader(T)) return;
+    try { walkNodes(parseTSQL(b.text).nodes, n => { if (n.t === 'sql' && n.kind === 'UPDATE' && n.text.toUpperCase().indexOf(value.toUpperCase()) >= 0) out.push(n.text); }); } catch (e) {}
+  });
+  return out;
+}
+function xrHasExample(code, procName){
+  if (!procName) return false;
+  return splitBatches(code).some(b => { const T = tok(b.text); if (!T.length || isProcHeader(T)) return false; return T.some((t, i) => isKw(t, 'EXEC', 'EXECUTE') && T.slice(i + 1, i + 5).some(x => x.k === 'id' && x.v.toLowerCase() === procName.toLowerCase())); });
+}
+function gradeXR(ex, code){
+  const X = ex.xr, L = X.labels, items = [];
+  const add = (g, s, t) => items.push({ g, s, t });
+  const fresh = () => { const db = makeDB('vacia'); return { db, res: execAll(db, code) }; };
+  const conDatos = fn => {
+    const t = fresh(); const G = xrFind(t.db, X); let err = null, raw = '', out;
+    try { out = fn(xrSeed(t.db, G), G, t.db); } catch (e) { raw = String((e && e.message) || e); err = traducir(raw, ''); }
+    t.db.close(); return { err, raw, out };
+  };
+  const fmtV = v => v === null || v === undefined ? 'NULL' : fmt(v);
+  const { db, res } = fresh();
+  const errs = res.inline ? (res.errors || []).map(e => e.message) : (res.error ? [res.error] : []);
+  add('Ejecución', errs.length ? 'fail' : 'pass', errs.length ? 'Tu script dio ' + plural(errs.length, 'error') + '. El primero: ' + errs[0] : 'El script corre completo, sin errores.');
+  const F = xrFind(db, X);
+  [['E', L.enc, X.enc], ['C', L.cat, X.cat], ['D', L.det, X.det]].forEach(z => {
+    add('Tablas', F[z[0]] ? 'pass' : 'fail', F[z[0]] ? 'Tabla de ' + z[1] + ': ' + F[z[0]].name + '.' : 'No encontré la tabla de ' + z[1] + '. Su nombre debe incluir «' + z[2][0] + '».');
+  });
+  if (F.E) {
+    if (F.E.rowid) add('Tablas', /IDENTITY/i.test(code) ? 'pass' : 'warn', 'El ID de ' + L.enc + ' es autoincremental' + (/IDENTITY/i.test(code) ? ' (IDENTITY).' : ', pero en SQL Server se escribe INT IDENTITY(1,1) PRIMARY KEY.'));
+    else add('Tablas', 'fail', 'El ID de ' + L.enc + ' no es autoincremental: escribe ' + (F.E.pk[0] ? F.E.pk[0].name : 'el ID') + ' INT IDENTITY(1,1) PRIMARY KEY.');
+    add('Tablas', F.fecha ? 'pass' : 'fail', F.fecha ? 'Fecha: ' + F.fecha.name + '.' : 'Falta la columna de fecha en ' + F.E.name + '.');
+    add('Tablas', F.sub ? 'pass' : 'fail', F.sub ? 'Subtotal: ' + F.sub.name + '.' : 'Falta la columna de subtotal en ' + F.E.name + '.');
+    add('Tablas', F.total ? 'pass' : 'fail', F.total ? 'Total: ' + F.total.name + (F.total.hidden ? ' (columna calculada).' : '.') : 'Falta la columna de total en ' + F.E.name + '.');
+  }
+  if (F.D) add('Tablas', F.cant ? 'pass' : 'fail', F.cant ? 'Cantidad: ' + F.cant.name + '.' : 'Falta la columna de cantidad en ' + F.D.name + '.');
+  if (F.D) {
+    add('Restricciones', F.fkE ? 'pass' : 'fail', F.fkE ? 'FK de ' + F.D.name + ' hacia ' + F.E.name + '.' : 'Falta la FK de ' + F.D.name + ' hacia la tabla de ' + L.enc + '.');
+    add('Restricciones', F.fkC ? 'pass' : 'fail', F.fkC ? 'FK de ' + F.D.name + ' hacia ' + F.C.name + '.' : 'Falta la FK de ' + F.D.name + ' hacia la tabla de ' + L.cat + '.');
+    const names = [];
+    [F.E, F.C, F.D].filter(Boolean).map(t => t.sql).join('\n').replace(/CONSTRAINT\s+("[^"]+"|\[[^\]]+\]|\w+)\s+FOREIGN\s+KEY/gi, (mm, n) => { names.push(n.replace(/["\[\]]/g, '')); return mm; });
+    const nFk = new Set(F.D.fks.map(f => f.id)).size;
+    if (!names.length) add('Restricciones', 'fail', 'Tus FK no tienen nombre. Escríbelas con CONSTRAINT FK_algo_TuApellido FOREIGN KEY (…) REFERENCES …');
+    else {
+      const bad = names.filter(n => !/^FK_.+_[A-Za-z]+$/i.test(n));
+      if (bad.length) add('Restricciones', 'fail', 'Estos nombres no siguen FK_loquequieras_tuApellido: ' + bad.join(', ') + '.');
+      else if (names.length < nFk) add('Restricciones', 'fail', 'Solo ' + plural(names.length, 'FK tiene', 'FK tienen') + ' nombre de las ' + nFk + '. Ponle CONSTRAINT FK_…_Apellido a cada una.');
+      else { const ap = new Set(names.map(n => n.split('_').pop().toLowerCase())); add('Restricciones', ap.size === 1 ? 'pass' : 'warn', 'Nombres de FK: ' + names.join(', ') + (ap.size === 1 ? '.' : '. Usa el mismo apellido en todas.')); }
+    }
+    if (F.E && F.C && F.fkE && F.fkC && F.cant) {
+      const linea = q => conDatos(S => { const p = S.prod(10); const v = S.venta(); S.linea(v, p, q, 10); });
+      const ok = linea(X.qty.good[0]);
+      if (ok.err) add('Restricciones', 'fail', 'No pude meter una línea de detalle válida (cantidad ' + X.qty.good[0] + ') en tus tablas: ' + ok.err);
+      else {
+        X.qty.good.slice(1).forEach(q => { const r = linea(q); add('Restricciones', r.err ? 'fail' : 'pass', r.err ? 'Rechazó una cantidad de ' + q + ', que sí es válida: ' + r.err : 'Acepta una cantidad de ' + q + '.'); });
+        X.qty.bad.forEach(q => { const r = linea(q); const isCheck = /CHECK/.test(r.raw); add('Restricciones', isCheck ? 'pass' : 'fail', isCheck ? 'Rechaza una cantidad de ' + q + ' (CHECK).' : r.err ? 'Una cantidad de ' + q + ' falló, pero no por un CHECK: ' + r.err : 'Aceptó una cantidad de ' + q + '. Regla: ' + X.qty.rule + '.'); });
+      }
+    }
+    if (X.catPrice && F.C && F.cPrecio) {
+      X.catPrice.bad.forEach(pv => { const r = conDatos(S => S.prod(pv)); const isCheck = /CHECK/.test(r.raw); add('Restricciones', isCheck ? 'pass' : 'fail', isCheck ? 'Rechaza un precio de ' + pv + ' (CHECK).' : 'Aceptó un precio de ' + pv + '. Regla: ' + X.catPrice.rule + '.'); });
+    }
+  }
+  if (F.E) {
+    const val = X.newcol.value;
+    if (!F.nueva) add('ALTER y UPDATE', 'fail', 'No encontré la columna de ' + X.newcol.label + ' en ' + F.E.name + ' (su nombre debe incluir «' + X.newcol.kw[0] + '»).');
+    else {
+      add('ALTER y UPDATE', isCharType(F.nueva.type) ? 'pass' : 'warn', 'Columna ' + F.nueva.name + ' (' + (F.nueva.type || 'sin tipo') + ')' + (isCharType(F.nueva.type) ? '.' : ': debería ser texto, por ejemplo VARCHAR(20).'));
+      const ups = xrUpdates(code, val);
+      if (!ups.length) add('ALTER y UPDATE', 'fail', "Falta el UPDATE que pone '" + val + "' en todos los registros.");
+      else {
+        const r = conDatos((S, G, d2) => {
+          S.venta(); S.venta();
+          const u = execAll(d2, ups.join(';\n')); if (hadError(u)) throw new Error(u.error || u.errors[0].message);
+          const c = d2.exec('SELECT COUNT(*) FROM ' + qid(G.E.name) + ' WHERE ' + qid(G.nueva.name) + ' IS NULL OR ' + qid(G.nueva.name) + ' <> ?', [val])[0].values[0][0];
+          const tot = d2.exec('SELECT COUNT(*) FROM ' + qid(G.E.name))[0].values[0][0];
+          return { c, tot };
+        });
+        if (r.err) add('ALTER y UPDATE', 'fail', 'Tu UPDATE dio error: ' + r.err);
+        else add('ALTER y UPDATE', r.out.c === 0 ? 'pass' : 'fail', r.out.c === 0 ? "Tu UPDATE deja '" + val + "' en los " + r.out.tot + ' registros de prueba.' : 'Después de tu UPDATE, ' + r.out.c + ' de ' + r.out.tot + " registros no quedaron en '" + val + "'. ¿Tiene un WHERE?");
+      }
+    }
+  }
+  const P = Object.values(db.__procs || {});
+  const pr = P.find(p => p.params.some(x => x.output)) || P[0];
+  if (!pr) add('Procedimiento', 'fail', 'No encontré ningún CREATE PROCEDURE.');
+  else {
+    const outP = pr.params.find(x => x.output), inP = pr.params.find(x => !x.output);
+    add('Procedimiento', 'pass', 'Procedimiento ' + pr.name + '(' + pr.params.map(x => x.name + ' ' + x.type + (x.output ? ' OUTPUT' : '')).join(', ') + ').');
+    if (!inP) add('Procedimiento', 'fail', 'Debe recibir el ID de la ' + L.enc + ' como parámetro.');
+    if (!outP) add('Procedimiento', 'fail', 'Falta el parámetro de salida, por ejemplo @Resultado BIT OUTPUT.');
+    else if (!/^\s*BIT\b/i.test(outP.type)) add('Procedimiento', 'warn', 'El parámetro de salida es ' + outP.type + '; para un booleano, SQL Server usa BIT.');
+    if (inP && outP && F.E && F.E.pk.length && F.D && F.fkE && F.fkC) {
+      const call = id => 'DECLARE @xr_r ' + outP.type + ';\nEXEC ' + pr.name + ' ' + inP.name + ' = ' + id + ', ' + outP.name + ' = @xr_r OUTPUT;\nSELECT @xr_r AS r;';
+      const fila = (d2, G, id) => d2.exec('SELECT ' + (G.sub ? qid(G.sub.name) : 'NULL') + ', ' + (G.total ? qid(G.total.name) : 'NULL') + ' FROM ' + qid(G.E.name) + ' WHERE ' + qid(G.E.pk[0].name) + ' = ?', [id])[0].values[0];
+      const r = conDatos((S, G, d2) => {
+        const p1 = S.prod(18.5), p2 = S.prod(17);
+        const a = S.venta(), b = S.venta();
+        S.linea(a, p1, 2, 18.5); S.linea(a, p2, 1, 17);
+        const ra = execAll(d2, call(a)); if (hadError(ra)) throw new Error(ra.error || ra.errors[0].message);
+        const fa = fila(d2, G, a);
+        const rb = execAll(d2, call(b)); if (hadError(rb)) throw new Error(rb.error || rb.errors[0].message);
+        const fb = fila(d2, G, b);
+        return { outA: lastTable(ra) ? lastTable(ra).rows[0][0] : null, subA: fa[0], totA: fa[1], outB: lastTable(rb) ? lastTable(rb).rows[0][0] : null, subB: fb[0] };
+      });
+      if (r.err) add('Procedimiento', 'fail', 'Al probar tu procedimiento hubo un error: ' + r.err);
+      else {
+        const o = r.out, sub = 54, tot = Math.round(54 * X.iva * 100) / 100;
+        const near = (x, y) => x !== null && x !== undefined && Math.abs(Number(x) - y) < 0.011;
+        const T = v => v === 1 || v === '1' || /^(true|verdadero)$/i.test(String(v));
+        const Fl = v => v === 0 || v === '0' || /^(false|falso)$/i.test(String(v));
+        const caso = 'Con 2 × 18.50 + 1 × 17.00 en el detalle';
+        if (F.sub) add('Procedimiento', near(o.subA, sub) ? 'pass' : 'fail', near(o.subA, sub) ? caso + ' calcula subtotal ' + sub + '.' : caso + ' el subtotal debía quedar en ' + sub + ' y quedó en ' + fmtV(o.subA) + '.');
+        if (F.total) add('Procedimiento', near(o.totA, tot) ? 'pass' : 'fail', near(o.totA, tot) ? 'Y total ' + tot + ' (subtotal × ' + X.iva + ').' : 'El total debía quedar en ' + tot + ' (subtotal × ' + X.iva + ') y quedó en ' + fmtV(o.totA) + '.');
+        add('Procedimiento', T(o.outA) ? 'pass' : 'fail', T(o.outA) ? 'Con esa ' + L.enc + ' regresa TRUE (1).' : 'Con esa ' + L.enc + ' debía regresar TRUE (1) y regresó ' + fmtV(o.outA) + '. ¿Asignas el parámetro de salida en todos los casos?');
+        add('Procedimiento', Fl(o.outB) ? 'pass' : 'fail', Fl(o.outB) ? 'Con una ' + L.enc + ' sin detalle regresa FALSE (0).' : 'Con una ' + L.enc + ' sin detalle debía regresar FALSE (0) y regresó ' + fmtV(o.outB) + '. Ojo: SUM de cero filas da NULL.');
+      }
+    }
+  }
+  const ej = xrHasExample(code, pr && pr.name);
+  add('Ejemplo', ej ? 'pass' : 'fail', ej ? 'Incluyes un ejemplo de ejecución con EXEC.' : 'Falta el ejemplo de ejecución: DECLARE @r BIT; EXEC ' + (pr ? pr.name : 'TuProcedimiento') + ' 1, @r OUTPUT; SELECT @r;');
+  db.close();
+  return { ok: !items.some(i => i.s === 'fail'), report: items };
+}
+function xrReportHTML(items, ok){
+  const groups = ['Ejecución', 'Tablas', 'Restricciones', 'ALTER y UPDATE', 'Procedimiento', 'Ejemplo'];
+  const nf = items.filter(i => i.s === 'fail').length;
+  let h = ok ? '<div class="msg ok"><span class="tag">Aprobado</span>Tu script cumple todos los incisos.</div>' : '<div class="msg err"><span class="tag">Todavía no</span>' + plural(nf, 'punto por corregir', 'puntos por corregir') + '.</div>';
+  h += '<div class="lab-report">';
+  groups.forEach(g => { const it = items.filter(i => i.g === g); if (!it.length) return; h += '<h4>' + g + '</h4><ul>' + it.map(i => '<li class="' + i.s + '"><b>' + (i.s === 'pass' ? '✓' : i.s === 'warn' ? '!' : '✗') + '</b>' + esc(i.t) + '</li>').join('') + '</ul>'; });
+  return h + '</div>';
+}
+function xrChecklist(e){
+  const X = e.xr, L = X.labels;
+  return ['Que tu script corra completo en una base vacía.',
+    'Que existan las tablas de ' + L.enc + ', ' + L.cat + ' y ' + L.det + '. Las reconozco por nombre: deben incluir «' + X.enc[0] + '», «' + X.cat[0] + '» y «' + X.det[0] + '».',
+    'Que el ID de ' + L.enc + ' sea autoincremental (IDENTITY) y que tenga fecha, subtotal y total.',
+    'Que el detalle tenga sus dos FK, cada una con nombre FK_algo_TuApellido.',
+    'La regla de cantidad: ' + X.qty.rule + '. Pruebo ' + X.qty.bad.join(' y ') + ' (deben fallar) y ' + X.qty.good.join(' y ') + ' (deben pasar).']
+    .concat(X.catPrice ? ['La regla de precio: ' + X.catPrice.rule + '.'] : [])
+    .concat(['Que exista la columna de ' + X.newcol.label + " y que tu UPDATE deje '" + X.newcol.value + "' en todos los registros (lo pruebo con registros de ejemplo).",
+      'Tu procedimiento: con un detalle de 2 × 18.50 + 1 × 17.00 debe dejar subtotal 54, total ' + Math.round(54 * X.iva * 100) / 100 + ' y regresar 1 (TRUE); con una ' + L.enc + ' sin detalle, regresar 0 (FALSE).',
+      'Que incluyas un ejemplo de ejecución con EXEC.']);
+}
 function grade(ex, code){
+  if (ex.tipo === 'xr') return gradeXR(ex, code);
   if (ex.tipo === 'query') {
     const udb = makeDB(ex.ds, ex.setup); const ur = execAll(udb, code); udb.close();
     const rdb = makeDB(ex.ds, ex.setup); const rr = execAll(rdb, ex.sol); rdb.close();
@@ -3616,6 +3874,7 @@ async function onAct(e, card, act){
   try { await READY; } catch (err) { out.innerHTML = '<div class="msg err"><span class="tag">Error</span>' + esc(err.message) + '</div>'; return; }
   if (act === 'run') { const db = makeDB(e.ds, e.setup); const r = execAll(db, ta.value); db.close(); out.innerHTML = resultsHTML(r); return; }
   if (act === 'expected') {
+    if (e.tipo === 'xr') { out.innerHTML = '<div class="msg info"><span class="tag">Se revisa</span>Tu script corre en una base vacía y después lo pruebo con datos de ejemplo:</div><ul class="probes">' + xrChecklist(e).map(t => '<li>' + esc(t) + '</li>').join('') + '</ul>'; return; }
     if (e.probes) { const list = e.probes.map(p => ({ p, r: runProbe(e, e.sol, p) })); out.innerHTML = '<div class="msg info"><span class="tag">Se revisa</span>' + (e.tipo === 'proc' ? 'Se crea tu procedimiento en una base limpia y se hacen estas llamadas:' : 'Después de tu código se prueba lo siguiente:') + '</div>' + probesHTML(list, true); return; }
     let exp;
     if (e.tipo === 'query') { const db = makeDB(e.ds, e.setup); exp = lastTable(execAll(db, e.sol)); db.close(); out.innerHTML = '<div class="msg info"><span class="tag">Esperado</span>Así debe verse tu resultado (los nombres de columna pueden variar' + (e.ordered ? '; el orden sí cuenta' : '; el orden no cuenta') + ').</div>' + tableHTML(exp.columns, exp.rows, 'Resultado esperado'); }
@@ -3631,6 +3890,10 @@ async function onAct(e, card, act){
   if (act === 'check') {
     tries[e.id] = (tries[e.id] || 0) + 1; store.set('tries', tries);
     const r = grade(e, ta.value);
+    if (r.report) {
+      if (r.ok) { solved[e.id] = true; store.set('solved', solved); if (card.dataset.pre === 'exam-' && exam) { exam.solvedEx[e.id] = true; store.set('exam2', exam); } updateProgress(); }
+      out.innerHTML = xrReportHTML(r.report, r.ok); return;
+    }
     let h = '';
     if (r.ok) {
       solved[e.id] = true; store.set('solved', solved);
@@ -3657,6 +3920,208 @@ EX.push({ id:'S0', b:'select', ds:'pokemon', tipo:'query', t:'Tu primera consult
   q:'Muestra todas las columnas y todas las filas de la tabla <b>Entrenador</b>.',
   pista:'<code>SELECT * FROM tabla;</code> El asterisco significa “todas las columnas”.',
   sol:'SELECT * FROM Entrenador;' });
+const XR_COMUN = 'Escribe el script completo, como lo entregarías, con <code>GO</code> entre lotes: tablas, FK con nombre, ALTER, UPDATE, procedimiento y ejemplo. El corrector reconoce tus tablas por su nombre y prueba tus reglas con datos; los nombres de columnas los eliges tú.';
+EX.push(
+{ id:'X1', b:'xr', ds:'vacia', tipo:'xr', t:'Examen rápido: Oxxo (el de tu clase)',
+  q:`<p>${XR_COMUN}</p><div class="xr-enunciado"><p>Asumiendo un negocio de venta de productos regular (Oxxo como referencia), crea las tablas que representan <b>venta</b>, <b>producto</b> y <b>detalle de venta</b> (que sus nombres digan Venta, Producto y Detalle):</p><ul><li>En la tabla de detalle no puede haber cantidades de producto menores a 0.</li><li>Las FK deberán nombrarse <code>FK_loquequieras_tuApellido</code>.</li><li>El ID/PK de la tabla de venta es autoincremental.</li><li>La venta incluye fecha, subtotal y total (subtotal × IVA del 16%).</li></ul><p>Después, agrega a la venta una columna de texto para el <b>tipo de pago</b> y haz un comando que ponga <code>'DESCONOCIDO'</code> en todos los registros.</p><p>Por último, un procedimiento que reciba el ID de una venta, calcule su subtotal y total con lo que diga el detalle y regrese un parámetro de salida booleano: TRUE (1) si el subtotal no es 0 y FALSE (0) si es 0. Incluye un ejemplo de la ejecución.</p></div>`,
+  pista:'Sigue el orden de la lección: Producto y Venta, luego DetalleVenta con su CHECK; las dos FK con <code>CONSTRAINT FK_…_TuApellido</code>; <code>ALTER TABLE Venta ADD …</code>; el UPDATE sin WHERE; <code>GO</code>; el procedimiento con <code>@IDVenta INT</code> y <code>@Resultado BIT OUTPUT</code>; <code>GO</code>; el ejemplo.',
+  xr:{ labels:{ enc:'venta', cat:'producto', det:'detalle de venta' }, enc:['venta'], cat:['producto','articulo'], det:['detalle'],
+    qty:{ rule:'no puede haber cantidades menores a 0', bad:[-1], good:[1, 0] }, newcol:{ kw:['pago'], value:'DESCONOCIDO', label:'tipo de pago' }, iva:1.16 },
+  sol:`/* Examen rápido SQL · Oxxo */
+
+-- 1) Tablas
+CREATE TABLE Producto (
+  IDProducto  INT           PRIMARY KEY,
+  Nombre      VARCHAR(50)   NOT NULL,
+  Precio      DECIMAL(10,2) NOT NULL
+);
+
+CREATE TABLE Venta (
+  IDVenta   INT IDENTITY(1,1) PRIMARY KEY,         -- autoincremental
+  Fecha     DATETIME      NOT NULL DEFAULT GETDATE(),
+  Subtotal  DECIMAL(10,2) NOT NULL DEFAULT 0,
+  Total     AS (Subtotal * 1.16)                   -- columna calculada: subtotal * IVA
+);
+
+CREATE TABLE DetalleVenta (
+  IDVenta     INT           NOT NULL,
+  IDProducto  INT           NOT NULL,
+  Cantidad    INT           NOT NULL CHECK (Cantidad >= 0),   -- no menores a 0
+  Precio      DECIMAL(10,2) NOT NULL,
+  PRIMARY KEY (IDVenta, IDProducto)
+);
+
+-- 2) Llaves foráneas con nombre: FK_loquequieras_tuApellido
+ALTER TABLE DetalleVenta ADD CONSTRAINT FK_DetalleVenta_Gonzalez
+  FOREIGN KEY (IDVenta) REFERENCES Venta(IDVenta);
+ALTER TABLE DetalleVenta ADD CONSTRAINT FK_DetalleProducto_Gonzalez
+  FOREIGN KEY (IDProducto) REFERENCES Producto(IDProducto);
+
+-- 3) Columna nueva y UPDATE a todos los registros
+ALTER TABLE Venta ADD TipoPago VARCHAR(20);
+UPDATE Venta SET TipoPago = 'DESCONOCIDO';
+GO
+
+-- 4) Procedimiento: recalcula el subtotal (el total se recalcula solo) y avisa si hubo venta
+CREATE PROCEDURE CalcularVenta
+  @IDVenta   INT,
+  @HayVenta  BIT OUTPUT
+AS
+BEGIN
+  SET NOCOUNT ON;
+  DECLARE @Subtotal DECIMAL(10,2);
+
+  SELECT @Subtotal = COALESCE(SUM(Cantidad * Precio), 0)
+  FROM DetalleVenta
+  WHERE IDVenta = @IDVenta;
+
+  UPDATE Venta
+  SET Subtotal = @Subtotal
+  WHERE IDVenta = @IDVenta;
+
+  IF @Subtotal <> 0
+    SET @HayVenta = 1;    -- TRUE
+  ELSE
+    SET @HayVenta = 0;    -- FALSE
+END
+GO
+
+-- 5) Ejemplo de ejecución
+INSERT INTO Producto VALUES (1, 'Coca-Cola 600 ml', 18.50), (2, 'Sabritas 45 g', 17.00);
+INSERT INTO Venta (Fecha) VALUES (GETDATE());
+INSERT INTO DetalleVenta VALUES (1, 1, 2, 18.50), (1, 2, 1, 17.00);
+
+DECLARE @Resultado BIT;
+EXEC CalcularVenta 1, @Resultado OUTPUT;
+SELECT @Resultado AS HayVenta;
+SELECT * FROM Venta;` },
+{ id:'X2', b:'xr', ds:'vacia', tipo:'xr', t:'Examen rápido: pizzería',
+  q:`<p>${XR_COMUN}</p><div class="xr-enunciado"><p>Una pizzería quiere registrar sus pedidos. Crea las tablas que representan <b>pedido</b>, <b>pizza</b> y <b>detalle del pedido</b> (que sus nombres digan Pedido, Pizza y Detalle):</p><ul><li>En el detalle, la cantidad de cada línea debe ser <b>mayor a 0</b>.</li><li>Las FK deberán nombrarse <code>FK_loquequieras_tuApellido</code>.</li><li>El ID del pedido es autoincremental.</li><li>El pedido incluye fecha, subtotal y total (subtotal × IVA del 16%).</li></ul><p>Después, agrega al pedido una columna de texto para el <b>método de entrega</b> y pon <code>'MOSTRADOR'</code> en todos los registros.</p><p>Por último, un procedimiento que reciba el ID de un pedido, calcule su subtotal y total con el detalle y regrese un parámetro de salida booleano: TRUE si el subtotal no es 0 y FALSE si es 0. Incluye un ejemplo de la ejecución.</p></div>`,
+  pista:'Igual que el de Oxxo, con dos cambios: el CHECK es <code>Cantidad &gt; 0</code> y la columna nueva es el método de entrega. Si el Total no es columna calculada, el procedimiento tiene que llenarlo.',
+  xr:{ labels:{ enc:'pedido', cat:'pizza', det:'detalle del pedido' }, enc:['pedido'], cat:['pizza','producto'], det:['detalle'],
+    qty:{ rule:'la cantidad debe ser mayor a 0', bad:[0, -2], good:[1] }, newcol:{ kw:['entrega'], value:'MOSTRADOR', label:'método de entrega' }, iva:1.16 },
+  sol:`CREATE TABLE Pizza (
+  IDPizza  INT IDENTITY(1,1) PRIMARY KEY,
+  Nombre   VARCHAR(50)   NOT NULL,
+  Precio   DECIMAL(10,2) NOT NULL
+);
+
+CREATE TABLE Pedido (
+  IDPedido  INT IDENTITY(1,1) PRIMARY KEY,
+  Fecha     DATETIME      NOT NULL DEFAULT GETDATE(),
+  Subtotal  DECIMAL(10,2) NOT NULL DEFAULT 0,
+  Total     DECIMAL(10,2) NOT NULL DEFAULT 0
+);
+
+-- Esta vez las restricciones van dentro del CREATE TABLE, todas con nombre
+CREATE TABLE DetallePedido (
+  IDPedido  INT           NOT NULL,
+  IDPizza   INT           NOT NULL,
+  Cantidad  INT           NOT NULL,
+  Precio    DECIMAL(10,2) NOT NULL,
+  CONSTRAINT PK_DetallePedido PRIMARY KEY (IDPedido, IDPizza),
+  CONSTRAINT CK_Cantidad_Positiva CHECK (Cantidad > 0),
+  CONSTRAINT FK_PedidoDetalle_Gonzalez FOREIGN KEY (IDPedido) REFERENCES Pedido(IDPedido),
+  CONSTRAINT FK_PizzaDetalle_Gonzalez  FOREIGN KEY (IDPizza)  REFERENCES Pizza(IDPizza)
+);
+
+ALTER TABLE Pedido ADD MetodoEntrega VARCHAR(20);
+UPDATE Pedido SET MetodoEntrega = 'MOSTRADOR';
+GO
+
+CREATE PROCEDURE CalcularPedido
+  @IDPedido  INT,
+  @Resultado BIT OUTPUT
+AS
+BEGIN
+  SET NOCOUNT ON;
+  DECLARE @Subtotal DECIMAL(10,2);
+
+  SELECT @Subtotal = ISNULL(SUM(Cantidad * Precio), 0)
+  FROM DetallePedido
+  WHERE IDPedido = @IDPedido;
+
+  UPDATE Pedido
+  SET Subtotal = @Subtotal,
+      Total    = @Subtotal * 1.16      -- aquí Total es columna normal
+  WHERE IDPedido = @IDPedido;
+
+  SET @Resultado = CASE WHEN @Subtotal <> 0 THEN 1 ELSE 0 END;
+END
+GO
+
+INSERT INTO Pizza (Nombre, Precio) VALUES ('Pepperoni grande', 189.00), ('Hawaiana mediana', 149.00);
+INSERT INTO Pedido DEFAULT VALUES;
+INSERT INTO DetallePedido VALUES (1, 1, 2, 189.00), (1, 2, 1, 149.00);
+
+DECLARE @r BIT;
+EXEC CalcularPedido @IDPedido = 1, @Resultado = @r OUTPUT;
+SELECT @r AS HayVenta;
+SELECT * FROM Pedido;` },
+{ id:'X3', b:'xr', ds:'vacia', tipo:'xr', t:'Examen rápido: ferretería',
+  q:`<p>${XR_COMUN}</p><div class="xr-enunciado"><p>Una ferretería factura sus ventas. Crea las tablas que representan <b>factura</b>, <b>artículo</b> y <b>detalle de factura</b> (que sus nombres digan Factura, Articulo y Detalle):</p><ul><li>En el detalle, la cantidad va <b>de 1 a 100 piezas</b> por línea.</li><li>El precio de un artículo debe ser <b>mayor a 0</b>.</li><li>Las FK deberán nombrarse <code>FK_loquequieras_tuApellido</code>.</li><li>El ID de la factura es autoincremental.</li><li>La factura incluye fecha, subtotal y total (subtotal × IVA del 16%).</li></ul><p>Después, agrega a la factura una columna de texto para el <b>estatus</b> y pon <code>'PAGADA'</code> en todos los registros.</p><p>Por último, un procedimiento que reciba el ID de una factura, calcule su subtotal y total con el detalle y regrese un parámetro de salida booleano: TRUE si el subtotal no es 0 y FALSE si es 0. Incluye un ejemplo de la ejecución.</p></div>`,
+  pista:'Dos CHECK: <code>Cantidad BETWEEN 1 AND 100</code> en el detalle y <code>Precio &gt; 0</code> en el artículo. En SQL Server también puedes asignar <code>\'TRUE\'</code> o <code>\'FALSE\'</code> a un BIT.',
+  xr:{ labels:{ enc:'factura', cat:'artículo', det:'detalle de factura' }, enc:['factura'], cat:['articulo','producto'], det:['detalle'],
+    qty:{ rule:'la cantidad va de 1 a 100', bad:[0, 101], good:[1, 100] }, catPrice:{ rule:'el precio debe ser mayor a 0', bad:[0] }, newcol:{ kw:['estatus','status','estado'], value:'PAGADA', label:'estatus' }, iva:1.16 },
+  sol:`CREATE TABLE Articulo (
+  IDArticulo   INT IDENTITY(1,1) PRIMARY KEY,
+  Descripcion  VARCHAR(80) NOT NULL,
+  Precio       MONEY       NOT NULL CHECK (Precio > 0)
+);
+
+CREATE TABLE Factura (
+  IDFactura  INT IDENTITY(1,1) PRIMARY KEY,
+  Fecha      DATE  NOT NULL DEFAULT GETDATE(),
+  Subtotal   MONEY NOT NULL DEFAULT 0,
+  Total      AS (Subtotal * 1.16) PERSISTED
+);
+
+CREATE TABLE DetalleFactura (
+  IDFactura   INT   NOT NULL,
+  IDArticulo  INT   NOT NULL,
+  Cantidad    INT   NOT NULL,
+  Precio      MONEY NOT NULL,
+  CONSTRAINT PK_DetalleFactura PRIMARY KEY (IDFactura, IDArticulo),
+  CONSTRAINT CK_Cantidad_1_a_100 CHECK (Cantidad BETWEEN 1 AND 100)
+);
+
+ALTER TABLE DetalleFactura ADD CONSTRAINT FK_FacturaDetalle_Gonzalez
+  FOREIGN KEY (IDFactura) REFERENCES Factura(IDFactura);
+ALTER TABLE DetalleFactura ADD CONSTRAINT FK_ArticuloDetalle_Gonzalez
+  FOREIGN KEY (IDArticulo) REFERENCES Articulo(IDArticulo);
+
+ALTER TABLE Factura ADD Estatus VARCHAR(15);
+UPDATE Factura SET Estatus = 'PAGADA';
+GO
+
+CREATE PROCEDURE CalcularFactura
+  @IDFactura     INT,
+  @TieneImporte  BIT OUTPUT
+AS
+BEGIN
+  SET NOCOUNT ON;
+  UPDATE Factura
+  SET Subtotal = (SELECT ISNULL(SUM(Cantidad * Precio), 0)
+                  FROM DetalleFactura
+                  WHERE IDFactura = @IDFactura)
+  WHERE IDFactura = @IDFactura;
+
+  IF (SELECT Subtotal FROM Factura WHERE IDFactura = @IDFactura) <> 0
+    SET @TieneImporte = 'TRUE';
+  ELSE
+    SET @TieneImporte = 'FALSE';
+END
+GO
+
+INSERT INTO Articulo (Descripcion, Precio) VALUES ('Martillo de uña 16 oz', 129.00), ('Caja de clavos 1 kg', 45.50);
+INSERT INTO Factura (Fecha) VALUES ('2025-03-10');
+INSERT INTO DetalleFactura VALUES (1, 1, 1, 129.00), (1, 2, 4, 45.50);
+
+DECLARE @ok BIT;
+EXEC CalcularFactura 1, @ok OUTPUT;
+SELECT @ok AS TieneImporte;
+SELECT * FROM Factura;` }
+);
 const EXBYID = {}; EX.forEach(e => { EXBYID[e.id] = e; });
 const Q = i => QUIZ[i];
 const QN = {
@@ -3704,7 +4169,13 @@ const QN = {
   throwDetiene: { q:'THROW, a diferencia de RAISERROR de nivel 16…', o:['Detiene el lote','Solo muestra un aviso'], a:0, w:'Con THROW ya no corre lo que sigue en ese lote, salvo que estés dentro de un TRY, donde salta al CATCH.' },
   tryCatch: { q:'Dentro de BEGIN TRY ocurre un error de llave repetida. ¿Qué pasa?', o:['Salta al BEGIN CATCH','Se ignora y sigue en el TRY'], a:0, w:'Cualquier error dentro del TRY pasa el control al CATCH, donde ERROR_MESSAGE() dice qué ocurrió.' },
   rollback: { q:'ROLLBACK TRANSACTION…', o:['Deshace todo lo hecho desde BEGIN TRANSACTION','Guarda los cambios','Borra la tabla'], a:0, w:'COMMIT guarda, ROLLBACK deshace. Juntos dan el “todo o nada”.' },
-  createExiste: { q:'Ejecutas CREATE PROCEDURE Pagar y Pagar ya existe…', o:['Error: usa ALTER PROCEDURE o CREATE OR ALTER','Se reemplaza solo'], a:0, w:'CREATE solo crea. Para cambiar uno que ya existe: ALTER, o CREATE OR ALTER, que hace cualquiera de las dos.' }
+  createExiste: { q:'Ejecutas CREATE PROCEDURE Pagar y Pagar ya existe…', o:['Error: usa ALTER PROCEDURE o CREATE OR ALTER','Se reemplaza solo'], a:0, w:'CREATE solo crea. Para cambiar uno que ya existe: ALTER, o CREATE OR ALTER, que hace cualquiera de las dos.' },
+  identity: { q:'¿Cómo haces autoincremental el ID de Venta en SQL Server?', o:['IDVenta INT IDENTITY(1,1) PRIMARY KEY','IDVenta INT AUTO_INCREMENT PRIMARY KEY','IDVenta INT DEFAULT +1'], a:0, w:'IDENTITY(semilla, incremento). AUTO_INCREMENT es de MySQL. Al insertar ya no mandas ese ID: SQL Server lo genera (si lo mandas, da error).' },
+  fkNombre: { q:'Para que una FK se llame FK_Venta_Gonzalez se escribe…', o:['CONSTRAINT FK_Venta_Gonzalez FOREIGN KEY (IDVenta) REFERENCES Venta(IDVenta)','FOREIGN KEY FK_Venta_Gonzalez (IDVenta) REFERENCES Venta','IDVenta INT FK_Venta_Gonzalez'], a:0, w:'El nombre va después de CONSTRAINT, dentro del CREATE TABLE o con ALTER TABLE … ADD CONSTRAINT.' },
+  computada: { q:'Total está declarado como <code>Total AS (Subtotal * 1.16)</code>. ¿Qué pasa con <code>UPDATE Venta SET Total = 100</code>?', o:['Funciona','Error: una columna calculada no se puede modificar'], a:1, w:'Una columna calculada se recalcula sola. Para cambiar el Total, cambia el Subtotal.' },
+  bitOut: { q:'El procedimiento debe regresar TRUE o FALSE. El parámetro de salida se declara…', o:['@Resultado BIT OUTPUT','@Resultado BOOLEAN OUTPUT','RETURN TRUE'], a:0, w:'SQL Server no tiene tipo BOOLEAN: se usa BIT, donde 1 es TRUE y 0 es FALSE.' },
+  updateTodos: { q:'“Haz un comando que modifique todos los registros e inserte DESCONOCIDO” se escribe…', o:['UPDATE Venta SET TipoPago = \'DESCONOCIDO\';','INSERT INTO Venta (TipoPago) VALUES (\'DESCONOCIDO\');','ALTER TABLE Venta SET TipoPago = \'DESCONOCIDO\';'], a:0, w:'Cambiar filas que ya existen es UPDATE, y sin WHERE toca todas. INSERT crearía filas nuevas.' },
+  sumNull: { q:'Para una venta sin detalle, <code>SUM(Cantidad * Precio)</code> regresa…', o:['0','NULL'], a:1, w:'SUM de cero filas es NULL. Con COALESCE(SUM(…), 0) o ISNULL(SUM(…), 0) queda en 0.' }
 };
 const INTRO = {
   fundamentos: '<h2>Cómo se usa esta página</h2><p class="prose">Cada bloque de código es una base de datos real que corre en tu navegador. Pulsa <b>Ejecutar</b> (o <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Enter</kbd>), cambia el código y vuelve a ejecutarlo: cada vez arranca con los datos limpios, así que no puedes romper nada.</p><div class="cell" data-ds="pokemon"><textarea>\nSELECT nombre, tipo, nivel\nFROM Pokemon\nWHERE nivel >= 40;</textarea></div>',
@@ -3712,6 +4183,78 @@ const INTRO = {
   repaso: '<h2>La base del LAB</h2><p class="prose">Estas son las preguntas tipo examen de tus diapositivas sobre facturas. Antes de empezar, mira cómo se conectan las tablas: FacturaEncabezado apunta a Cliente y a Empleado; FacturaDetalle apunta a FacturaEncabezado y a Producto; Producto apunta a Categoria y a Proveedor.</p><div class="schema" data-schema="tienda"><p class="small">Cargando esquema…</p></div>',
   lab: '<h2>El proyecto</h2><p class="prose">El LAB opcional pide crear la base, las 7 tablas del Anexo 1 con sus relaciones, insertar los datos del Anexo 2, calcular importes con SUM() y consultar todo. Escribe tu script completo en la parte 2 y revísalo contra los anexos: la lección se completa cuando la revisión sale sin pendientes.</p>',
   misterio: '<h2>El caso</h2><p class="prose">El SQL Murder Mystery de Knight Lab es una base SQLite con un asesinato en SQL City. En modo <i>experienced</i> no hay tutorial: solo el esquema y una pista. Se resuelve en su sitio; aquí tienes el esquema, el método y pistas en tres niveles por paso.</p><p><a class="btn primary" href="https://mystery.knightlab.com/#experienced" target="_blank" rel="noopener">Abrir el misterio en Knight Lab ↗</a></p>',
+  xrGuia: `<h2>El examen</h2>
+<p class="prose">Así viene el examen rápido de tu clase (examenRapidoSQL). Léelo como una lista de herramientas: casi todo ya lo viste en el curso; aquí se junta en un solo script.</p>
+<div class="xr-enunciado"><p>Escribir en sintaxis SQL los comandos necesarios para resolver cada uno de los incisos.</p><p>Asumiendo un negocio de venta de productos regular (Oxxo como referencia), crea las tablas que representan venta, producto y detalle de venta. Teniendo en cuenta lo siguiente:</p><ul><li>En la tabla de detalle, no puede haber cantidades de producto menores a 0.</li><li>Las FK deberán nombrarse FK_loquequieras_tuApellido.</li><li>Debe ser autoincremental el ID/PK de la tabla de venta.</li><li>La tabla de venta deberá incluir fecha de la venta, subtotal y total (calculado con subtotal * IVA).</li></ul><p>Una vez creadas las tablas, modifica la tabla venta y agrega una columna que sea un string que guarde tipo de pago, y haz un comando que modifique todos los registros de la tabla e inserte “DESCONOCIDO” en esa columna.</p><p>Finalmente, crea un procedimiento almacenado que reciba el ID de una venta y, basado en ello, haga el cálculo del subtotal y totales para esa venta, calculándolos con base en lo que nos diga el detalle. Que nos dé un output booleano de TRUE si el resultado no es 0, FALSE si es 0. Incluye un ejemplo de la ejecución.</p></div>
+<h3>De cada frase a una instrucción</h3>
+<div class="dt-wrap"><table class="dt"><thead><tr><th>El examen dice</th><th>Se escribe</th></tr></thead><tbody>
+<tr><td>venta, producto y detalle de venta</td><td>Tres tablas. El detalle es la entidad débil: llave compuesta (IDVenta, IDProducto) y dos FK</td></tr>
+<tr><td>no puede haber cantidades menores a 0</td><td><code>Cantidad INT NOT NULL CHECK (Cantidad &gt;= 0)</code></td></tr>
+<tr><td>las FK deberán nombrarse FK_loquequieras_tuApellido</td><td><code>CONSTRAINT FK_DetalleVenta_Gonzalez FOREIGN KEY (IDVenta) REFERENCES Venta(IDVenta)</code>, dentro del CREATE TABLE o con <code>ALTER TABLE … ADD CONSTRAINT</code></td></tr>
+<tr><td>autoincremental el ID de venta</td><td><code>IDVenta INT IDENTITY(1,1) PRIMARY KEY</code>; al insertar ya no se manda el ID</td></tr>
+<tr><td>fecha, subtotal y total (subtotal * IVA)</td><td><code>Fecha DATETIME DEFAULT GETDATE()</code>, <code>Subtotal DECIMAL(10,2)</code> y <code>Total AS (Subtotal * 1.16)</code> (columna calculada), o un Total normal que llena el procedimiento</td></tr>
+<tr><td>agrega una columna string de tipo de pago</td><td><code>ALTER TABLE Venta ADD TipoPago VARCHAR(20);</code></td></tr>
+<tr><td>modifique todos los registros con “DESCONOCIDO”</td><td><code>UPDATE Venta SET TipoPago = 'DESCONOCIDO';</code> (sin WHERE: todos)</td></tr>
+<tr><td>procedimiento que reciba el ID y calcule con el detalle</td><td><code>CREATE PROCEDURE … @IDVenta INT</code>, <code>SUM(Cantidad * Precio)</code> y un UPDATE a esa venta</td></tr>
+<tr><td>output booleano TRUE / FALSE</td><td><code>@Resultado BIT OUTPUT</code>: 1 es TRUE y 0 es FALSE</td></tr>
+<tr><td>incluye un ejemplo de la ejecución</td><td>Datos de prueba, <code>DECLARE @r BIT;</code>, <code>EXEC …, @r OUTPUT;</code> y <code>SELECT @r;</code></td></tr>
+</tbody></table></div>
+<h3>Lo nuevo: IDENTITY, DEFAULT GETDATE() y columna calculada</h3>
+<div class="cell" data-ds="vacia"><textarea>
+CREATE TABLE Venta (
+  IDVenta   INT IDENTITY(1,1) PRIMARY KEY,      -- autoincremental
+  Fecha     DATETIME NOT NULL DEFAULT GETDATE(),
+  Subtotal  DECIMAL(10,2) NOT NULL DEFAULT 0,
+  Total     AS (Subtotal * 1.16)                -- columna calculada
+);
+
+INSERT INTO Venta (Subtotal) VALUES (100);      -- sin IDVenta ni Fecha
+INSERT INTO Venta (Subtotal) VALUES (250.50);
+
+SELECT * FROM Venta;</textarea></div>
+<h3>FK con nombre, como las escribe tu profe</h3>
+<p class="prose">En la pantalla de tu clase las FK se agregan después de crear las tablas, con ALTER TABLE. El nombre va después de CONSTRAINT. La última línea prueba que la FK ya funciona.</p>
+<div class="cell" data-ds="vacia" data-expect="error"><textarea>
+CREATE TABLE Producto (IDProducto INT PRIMARY KEY, Nombre VARCHAR(50) NOT NULL, Precio DECIMAL(10,2) NOT NULL);
+CREATE TABLE Venta (IDVenta INT IDENTITY(1,1) PRIMARY KEY, Fecha DATETIME DEFAULT GETDATE());
+CREATE TABLE DetalleVenta (
+  IDVenta     INT NOT NULL,
+  IDProducto  INT NOT NULL,
+  Cantidad    INT NOT NULL CHECK (Cantidad >= 0),
+  Precio      DECIMAL(10,2) NOT NULL,
+  PRIMARY KEY (IDVenta, IDProducto)
+);
+
+ALTER TABLE DetalleVenta ADD CONSTRAINT FK_DetalleVenta_Gonzalez
+  FOREIGN KEY (IDVenta) REFERENCES Venta(IDVenta);
+ALTER TABLE DetalleVenta ADD CONSTRAINT FK_DetalleProducto_Gonzalez
+  FOREIGN KEY (IDProducto) REFERENCES Producto(IDProducto);
+
+INSERT INTO DetalleVenta VALUES (99, 1, 2, 10);   -- no existe la venta 99: la FK lo rechaza</textarea></div>
+<h3>Salida booleana con BIT</h3>
+<div class="cell" data-ds="vacia"><textarea>
+CREATE PROCEDURE EsMayorDeEdad
+  @Edad       INT,
+  @Resultado  BIT OUTPUT
+AS
+BEGIN
+  IF @Edad >= 18
+    SET @Resultado = 1;     -- TRUE
+  ELSE
+    SET @Resultado = 0;     -- FALSE
+END
+GO
+
+DECLARE @r BIT;
+EXEC EsMayorDeEdad 20, @r OUTPUT;
+SELECT @r AS mayor;
+
+EXEC EsMayorDeEdad 15, @r OUTPUT;
+SELECT @r AS mayor;</textarea></div>
+<h3>Orden para escribirlo</h3>
+<ol><li>Las tablas que no dependen de nadie (Producto y Venta) y después el detalle.</li><li>Las FK con nombre, dentro del CREATE TABLE o con ALTER TABLE … ADD CONSTRAINT.</li><li>El ALTER TABLE … ADD de la columna nueva y el UPDATE sin WHERE. Luego <code>GO</code>.</li><li>El procedimiento, con <code>GO</code> después de su END.</li><li>El ejemplo: datos, DECLARE, EXEC con OUTPUT y SELECT del resultado.</li></ol>
+<p class="callout"><b>Lo que más baja puntos.</b> FK sin nombre; olvidar IDENTITY, o mandar el ID al insertar (en SQL Server da error); hacer UPDATE a una columna calculada; olvidar el GO después del END; olvidar OUTPUT en el EXEC; VARCHAR sin tamaño; y no tomar en cuenta que SUM de una venta sin detalle da NULL, no 0.</p>`,
+  xrPractica: '<h2>Mismo examen, otros negocios</h2><p class="prose">Tu profe puede cambiar el negocio y algunas reglas, pero la estructura se repite: encabezado, catálogo y detalle; reglas con CHECK; FK con nombre; ID autoincremental; una columna nueva con ALTER y un UPDATE; y un procedimiento con salida BIT. Resuélvelos sin ver la lección anterior y usa “Qué se revisa” solo si te atoras.</p>',
   examen: '<h2>Cómo funciona</h2><p class="prose">20 preguntas al azar de todo el curso y 6 ejercicios, uno por tema: LDD, LMD, consultas, agregación y subconsultas, álgebra y procedimientos. Responde las preguntas y pulsa Calificar: se aprueba con 16. Los ejercicios cuentan solo si los resuelves aquí. Puedes hacer otro examen cuando quieras; cada uno sale distinto.</p>'
 };
 const MODULES = [
@@ -3746,6 +4289,9 @@ const MODULES = [
     { id:'proc-output', t:'OUTPUT y RETURN', obj:'Devolver valores a quien llama con parámetros de salida y códigos de retorno.', from:[['procedimientos','OUTPUT y RETURN']], quiz:[Q(16), QN.return1], ex:['P6'] },
     { id:'proc-errores', t:'Validar y avisar errores', obj:'Validar reglas con IF y avisar con RAISERROR o THROW sin dejar que el procedimiento siga.', from:[['procedimientos','Validar y avisar errores'],['procedimientos','Cómo se comportan los errores']], quiz:[Q(15), QN.throwDetiene], ex:['P5'] },
     { id:'proc-transacciones', t:'Transacciones y TRY…CATCH', obj:'Hacer cambios de “todo o nada”, recuperarte de errores y cambiar o borrar procedimientos.', from:[['procedimientos','Transacciones'],['procedimientos','Cambiar, consultar y borrar'],['procedimientos','Qué entiende este simulador']], quiz:[QN.tryCatch, QN.rollback, QN.createExiste], ex:['P9','P8','P10'] } ] },
+  { t:'Examen rápido', d:'Ejercicios integradores como los de tu clase: tablas con reglas, FK con nombre, ALTER, UPDATE y un procedimiento con salida booleana.', lessons:[
+    { id:'xr-guia', t:'El examen rápido, paso a paso', obj:'Resolver un examen como el de tu clase: tablas con restricciones, FK con nombre, ID autoincremental, ALTER, UPDATE y un procedimiento con salida booleana.', intro:INTRO.xrGuia, quiz:[QN.identity, QN.fkNombre, QN.computada, QN.bitOut], ex:['X1'] },
+    { id:'xr-practica', t:'Practica con otros negocios', obj:'Resolver versiones del examen con otros negocios y otras reglas, sin guía.', intro:INTRO.xrPractica, quiz:[QN.updateTodos, QN.sumNull], ex:['X2','X3'] } ] },
   { t:'Proyecto final', d:'El LAB completo, el misterio y un examen.', lessons:[
     { id:'lab', kind:'lab', t:'LAB: una base completa', obj:'Escribir el script completo del LAB y validarlo contra los Anexos 1 y 2.', intro:INTRO.lab, from:[['lab','Las seis actividades'],['lab','Anexo 1'],['lab','Anexo 2']], practiceFrom:[['lab','Tu script'],['lab','Script de referencia']], practiceLabel:'Tu script' },
     { id:'misterio', kind:'misterio', t:'SQL Murder Mystery', obj:'Resolver el caso en modo experienced usando todo lo que aprendiste.', intro:INTRO.misterio, from:[['misterio','La pista inicial'],['misterio','El caso, paso a paso'],['misterio','Libreta del detective']] },
@@ -4098,7 +4644,8 @@ async function runSelfTest(){
   const items = [];
   for (const e of EX) {
     let r; try { r = grade(e, e.sol); } catch (err) { items.push({ s: 'fail', t: e.id + ': excepción ' + err.message }); continue; }
-    if (!r.ok) { items.push({ s: 'fail', t: e.id + ': la solución no pasa su revisión. ' + (r.res && r.res.error ? r.res.error + ' [' + r.res.raw + ']' : (r.msg || '')) }); continue; }
+    if (!r.ok) { items.push({ s: 'fail', t: e.id + ': la solución no pasa su revisión. ' + (r.report ? r.report.filter(i => i.s === 'fail').map(i => i.t).join(' | ') : r.res && r.res.error ? r.res.error + ' [' + r.res.raw + ']' : (r.msg || '')) }); continue; }
+    if (r.report) { const w = r.report.filter(i => i.s === 'warn'); items.push({ s: w.length ? 'warn' : 'pass', t: e.id + ': ' + r.report.length + ' revisiones del examen rápido' + (w.length ? ' · avisos: ' + w.map(i => i.t).join(' | ') : '') }); continue; }
     if (e.probes) {
       const bad = r.probes.filter(x => x.r.status !== x.p.e);
       items.push(bad.length ? { s: 'fail', t: e.id + ': pruebas con resultado inesperado: ' + bad.map(x => x.p.l + ' (' + x.r.status + ')').join('; ') } : { s: 'pass', t: e.id + ': ' + r.probes.length + ' pruebas como se esperaba' });

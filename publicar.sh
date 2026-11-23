@@ -1,18 +1,15 @@
 #!/usr/bin/env bash
-# Publica la Bitácora SQL en GitHub Pages, en el repo público <tu-usuario>/bitacora-sql.
-# Crea (o actualiza) la carpeta ~/Downloads/claude/bitacora-sql con el repo.
-# Se puede volver a correr para subir una versión nueva.
+# Arma index.html a partir de fuente/bitacora-sql.html y lo publica en GitHub Pages.
+# Uso:
+#   bash ~/Downloads/claude/bitacora-sql/publicar.sh               arma, hace commit y sube
+#   bash ~/Downloads/claude/bitacora-sql/publicar.sh --solo-armar  solo arma index.html
+#   MENSAJE="Texto del commit" bash …/publicar.sh                   con mensaje propio
 set -euo pipefail
 
-SRC_DIR="$(cd "$(dirname "$0")" && pwd)"
-DIR="$HOME/Downloads/claude/bitacora-sql"
+DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO="bitacora-sql"
-
-mkdir -p "$DIR/fuente"
-cp "$SRC_DIR/bitacora-sql.html" "$DIR/fuente/bitacora-sql.html"
-cp "$SRC_DIR/README.md" "$DIR/README.md"
-cp "$SRC_DIR/publicar.sh" "$DIR/publicar.sh"
 cd "$DIR"
+[ -f fuente/bitacora-sql.html ] || { echo "No encuentro fuente/bitacora-sql.html"; exit 1; }
 
 # index.html como documento completo (doctype, charset y viewport) con la página adentro
 {
@@ -21,11 +18,13 @@ cd "$DIR"
   printf '\n</body>\n</html>\n'
 } > index.html
 
+if [ "${1:-}" = "--solo-armar" ]; then echo "index.html armado."; exit 0; fi
+
 OWNER="$(gh api user -q .login)"
 if [ ! -d .git ]; then git init -q -b main; fi
 git add index.html fuente/bitacora-sql.html README.md publicar.sh
 if ! git diff --cached --quiet; then
-  git commit -q -m "Publica la Bitácora SQL" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+  git commit -q -m "${MENSAJE:-Actualiza la Bitácora SQL}" -m "Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 fi
 
 if gh repo view "$OWNER/$REPO" >/dev/null 2>&1; then
@@ -36,7 +35,6 @@ else
     --description "Curso paso a paso de SQL con ejercicios que se corrigen solos"
 fi
 
-# Activa GitHub Pages desde la rama main (si ya estaba activo, no pasa nada)
 gh api -X POST "repos/$OWNER/$REPO/pages" -f "source[branch]=main" -f "source[path]=/" >/dev/null 2>&1 || true
 
 echo ""
