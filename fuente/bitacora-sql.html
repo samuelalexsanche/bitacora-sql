@@ -1943,7 +1943,7 @@ const EX = [
 CREATE TABLE Proveedor (IDProveedor INT PRIMARY KEY, RazonSocial VARCHAR(50) NOT NULL);
 INSERT INTO Categoria VALUES (1, 'lacteos');
 INSERT INTO Proveedor VALUES (1, 'Lala');`,
-  q:`Ya existen <b>Categoria</b> y <b>Proveedor</b>, con un registro cada una (ID 1). Crea <b>Producto</b> con: <code>IDProducto</code> entero PK; <code>Descripcion</code> VARCHAR(50) obligatoria; <code>PrecioUnitario</code> MONEY que no puede ser negativo; <code>UnidadStock</code> entero obligatorio; <code>IDCategoria</code> entero obligatorio, FK a Categoria; <code>IDProveedor</code> entero obligatorio, FK a Proveedor.`,
+  q:`Ya existen las tablas <code>Categoria(IDCategoria, DescripcionCategoria)</code> y <code>Proveedor(IDProveedor, RazonSocial)</code>, con un registro cada una (ID 1). Crea la tabla <b>Producto</b> con estas columnas: <code>IDProducto</code> INT, llave primaria; <code>Descripcion</code> VARCHAR(50), obligatoria; <code>PrecioUnitario</code> MONEY, que no puede ser negativo; <code>UnidadStock</code> INT, obligatorio; <code>IDCategoria</code> INT, obligatorio y FK a <code>Categoria(IDCategoria)</code>; <code>IDProveedor</code> INT, obligatorio y FK a <code>Proveedor(IDProveedor)</code>.`,
   pista:`El “no negativo” es un <code>CHECK (PrecioUnitario &gt;= 0)</code>. Las FK puedes ponerlas al final: <code>FOREIGN KEY (IDCategoria) REFERENCES Categoria(IDCategoria)</code>.`,
   sol:`CREATE TABLE Producto (
   IDProducto      INT          PRIMARY KEY,
@@ -1969,7 +1969,7 @@ INSERT INTO Proveedor VALUES (1, 'Lala');`,
 CREATE TABLE FacturaEncabezado (IDFactura INT PRIMARY KEY, Fecha DATE NOT NULL);
 INSERT INTO Producto VALUES (1, 'Queso'), (2, 'Leche');
 INSERT INTO FacturaEncabezado VALUES (1, '2011-11-25');`,
-  q:`Existen <b>Producto</b> (ID 1 y 2) y <b>FacturaEncabezado</b> (factura 1). Crea <b>FacturaDetalle</b> con <code>IDFactura</code> (FK a FacturaEncabezado), <code>IDProducto</code> (FK a Producto), <code>Cantidad</code> entero obligatorio, <code>Precio</code> MONEY y <code>TotalLinea</code> MONEY. La llave primaria es la pareja <code>(IDFactura, IDProducto)</code>.`,
+  q:`Ya existen <code>Producto(IDProducto, Descripcion)</code>, con los productos 1 y 2, y <code>FacturaEncabezado(IDFactura, Fecha)</code>, con la factura 1. Crea la tabla <b>FacturaDetalle</b> con: <code>IDFactura</code> INT, FK a <code>FacturaEncabezado(IDFactura)</code>; <code>IDProducto</code> INT, FK a <code>Producto(IDProducto)</code>; <code>Cantidad</code> INT, obligatorio; <code>Precio</code> MONEY; <code>TotalLinea</code> MONEY. Su llave primaria es compuesta: (<code>IDFactura</code>, <code>IDProducto</code>).`,
   pista:`Una llave de dos columnas no se puede escribir en la columna: va al final, <code>PRIMARY KEY (IDFactura, IDProducto)</code>. Si pones PRIMARY KEY en cada columna por separado, SQL Server da error.`,
   sol:`CREATE TABLE FacturaDetalle (
   IDFactura   INT    NOT NULL,
@@ -1989,7 +1989,7 @@ INSERT INTO FacturaEncabezado VALUES (1, '2011-11-25');`,
     { l:'Cantidad en NULL', sql:P3+'(1, 1, NULL, 45, NULL);', e:'error' }
   ]},
 { id:'D4', b:'ldd', ds:'vacia', tipo:'ddl', t:'CHECK y DEFAULT',
-  q:`Crea <b>Cliente</b> con <code>IDCliente</code> entero PK, <code>Nombre</code> VARCHAR(50) obligatorio, <code>Sexo</code> CHAR(1) que solo acepte <code>'M'</code> o <code>'F'</code>, y <code>Activo</code> entero que valga 1 cuando no se indique.`,
+  q:`Crea la tabla <b>Cliente</b> con: <code>IDCliente</code> INT, llave primaria; <code>Nombre</code> VARCHAR(50), obligatorio; <code>Sexo</code> CHAR(1), que solo acepte <code>'M'</code> o <code>'F'</code>; <code>Activo</code> INT, que valga 1 cuando no se indique.`,
   pista:`<code>CHECK (Sexo IN ('M','F'))</code> y <code>DEFAULT 1</code>.`,
   sol:`CREATE TABLE Cliente (
   IDCliente  INT          PRIMARY KEY,
@@ -2004,7 +2004,7 @@ INSERT INTO FacturaEncabezado VALUES (1, '2011-11-25');`,
     { l:'Nombre en NULL', sql:P4+"(3, NULL, 'F');", e:'error' }
   ]},
 { id:'D5', b:'ldd', ds:'vacia', tipo:'ddl', t:'UNIQUE',
-  q:`Crea <b>Empleado</b> con <code>IDEmpleado</code> entero PK, <code>Nombre</code> VARCHAR(50) obligatorio y <code>RFC</code> VARCHAR(13) obligatorio y que no se repita entre empleados.`,
+  q:`Crea la tabla <b>Empleado</b> con: <code>IDEmpleado</code> INT, llave primaria; <code>Nombre</code> VARCHAR(50), obligatorio; <code>RFC</code> VARCHAR(13), obligatorio y sin repetirse entre empleados.`,
   pista:`Una columna puede tener varias restricciones seguidas: <code>NOT NULL UNIQUE</code>.`,
   sol:`CREATE TABLE Empleado (
   IDEmpleado  INT          PRIMARY KEY,
@@ -2017,7 +2017,7 @@ INSERT INTO FacturaEncabezado VALUES (1, '2011-11-25');`,
     { l:'RFC en NULL', sql:P5+"(3, 'Ana', NULL);", e:'error' }
   ]},
 { id:'D6', b:'ldd', ds:'pokemon', tipo:'ddl', t:'Agregar una columna',
-  q:`En la base Pokémon, agrega a <b>Entrenador</b> la columna <code>email</code> (VARCHAR(100)) sin perder los datos que ya tiene.`,
+  q:`Base Pokémon. Agrega a la tabla <code>Entrenador</code> la columna <code>email</code> VARCHAR(100), sin borrar la tabla ni perder sus 7 entrenadores.`,
   pista:`<code>ALTER TABLE … ADD …</code>. En SQL Server no se escribe la palabra COLUMN.`,
   sol:`ALTER TABLE Entrenador ADD email VARCHAR(100);`,
   probes:[
@@ -2026,7 +2026,7 @@ INSERT INTO FacturaEncabezado VALUES (1, '2011-11-25');`,
     { l:'Se puede guardar un email', sql:"UPDATE Entrenador SET email = 'ash@paleta.mx' WHERE nombre = 'Ash'; SELECT email FROM Entrenador WHERE nombre = 'Ash';", e:'ok' }
   ]},
 { id:'D7', b:'ldd', ds:'pokemon', tipo:'ddl', t:'Eliminar una tabla',
-  q:`Elimina por completo la tabla <b>Medalla</b>: estructura y datos. Las demás tablas deben quedar intactas.`,
+  q:`Base Pokémon. Elimina por completo la tabla <code>Medalla</code> (estructura y datos). Las tablas <code>Entrenador</code>, <code>Pokemon</code> y <code>Gimnasio</code> deben quedar intactas.`,
   pista:`DELETE borra filas; la estructura solo se va con DROP.`,
   sol:`DROP TABLE Medalla;`,
   probes:[
@@ -2034,7 +2034,7 @@ INSERT INTO FacturaEncabezado VALUES (1, '2011-11-25');`,
     { l:'Pokemon conserva sus 19 filas', sql:"SELECT COUNT(*) FROM Pokemon;", e:'ok' }
   ]},
 { id:'D8', b:'ldd', ds:'pokemon', tipo:'ddl', t:'Eliminar en el orden correcto',
-  q:`Elimina las tablas <b>Gimnasio</b> y <b>Medalla</b>. Ojo: Medalla tiene una FK hacia Gimnasio.`,
+  q:`Base Pokémon. Elimina las tablas <code>Gimnasio</code> y <code>Medalla</code>. Ojo: <code>Medalla.id_gimnasio</code> es FK hacia <code>Gimnasio(id)</code>.`,
   pista:`Primero la tabla hija (la que tiene la FK), luego la padre.`,
   sol:`DROP TABLE Medalla;
 DROP TABLE Gimnasio;`,
@@ -2044,12 +2044,12 @@ DROP TABLE Gimnasio;`,
 
 /* ---------- LMD ---------- */
 { id:'M1', b:'lmd', ds:'pokemon', tipo:'dml', t:'Insertar a Brock',
-  q:`Inserta al entrenador <b>Brock</b>: CURP <code>XYZ123456HDFRRN03</code>, 18 años, género <code>M</code>, dinero 4000, ciudad <code>Ciudad Plateada</code>.`,
+  q:`Inserta una fila en la tabla <code>Entrenador</code> (columnas <code>curp</code>, <code>nombre</code>, <code>edad</code>, <code>genero</code>, <code>dinero</code>, <code>ciudad</code>) con el entrenador Brock: curp <code>'XYZ123456HDFRRN03'</code>, nombre <code>'Brock'</code>, edad 18, género <code>'M'</code>, dinero 4000 y ciudad <code>'Ciudad Plateada'</code>.`,
   pista:`Usa la lista de columnas <code>(curp, nombre, edad, genero, dinero, ciudad)</code>. Texto entre comillas simples, números sin comillas.`,
   sol:BROCK,
   check:`SELECT * FROM Entrenador ORDER BY curp;` },
 { id:'M2', b:'lmd', ds:'pokemon', tipo:'dml', t:'Padre e hijos en orden',
-  q:`Registra a Brock (mismos datos que M1) y a sus dos Pokémon: id 20 <code>Onix</code>, tipo <code>Roca</code>, nivel 20; e id 21 <code>Geodude</code>, tipo <code>Roca</code>, nivel 15. Hazlo en el orden que exige la llave foránea.`,
+  q:`Brock todavía no existe. Primero insértalo en la tabla <code>Entrenador</code> con los mismos datos de M1: curp <code>'XYZ123456HDFRRN03'</code>, nombre <code>'Brock'</code>, edad 18, género <code>'M'</code>, dinero 4000, ciudad <code>'Ciudad Plateada'</code>. Después inserta sus dos Pokémon en la tabla <code>Pokemon</code> (columnas <code>id</code>, <code>nombre</code>, <code>tipo</code>, <code>nivel</code>, <code>curp_entrenador</code>): id 20, <code>'Onix'</code>, tipo <code>'Roca'</code>, nivel 20; e id 21, <code>'Geodude'</code>, tipo <code>'Roca'</code>, nivel 15. En los dos, <code>curp_entrenador</code> es la CURP de Brock. El orden importa por la llave foránea.`,
   pista:`Primero el entrenador. Los dos Pokémon caben en un solo INSERT con dos grupos de VALUES separados por coma.`,
   sol:BROCK + `
 INSERT INTO Pokemon (id, nombre, tipo, nivel, curp_entrenador) VALUES
@@ -2057,41 +2057,41 @@ INSERT INTO Pokemon (id, nombre, tipo, nivel, curp_entrenador) VALUES
   (21, 'Geodude', 'Roca', 15, 'XYZ123456HDFRRN03');`,
   check:`SELECT P.id, P.nombre, P.tipo, P.nivel, E.nombre AS entrenador FROM Pokemon P LEFT JOIN Entrenador E ON E.curp = P.curp_entrenador ORDER BY P.id;` },
 { id:'M3', b:'lmd', ds:'pokemon', tipo:'dml', t:'Ash con 6000',
-  q:`Actualiza a 6000 el dinero del entrenador Ash, y de nadie más.`,
+  q:`En la tabla <code>Entrenador</code>, cambia a 6000 el <code>dinero</code> del entrenador cuyo <code>nombre</code> es <code>'Ash'</code>. Los demás entrenadores no deben cambiar.`,
   pista:`UPDATE … SET … WHERE. Sin WHERE se lo cambias a todos.`,
   sol:`UPDATE Entrenador SET dinero = 6000 WHERE nombre = 'Ash';`,
   check:`SELECT nombre, dinero FROM Entrenador ORDER BY curp;` },
 { id:'M4', b:'lmd', ds:'pokemon', tipo:'dml', t:'Subir de nivel',
-  q:`Sube 5 niveles a los Pokémon de tipo <code>Agua</code> que tengan nivel menor a 20.`,
+  q:`En la tabla <code>Pokemon</code>, suma 5 a la columna <code>nivel</code> de los registros cuyo <code>tipo</code> es <code>'Agua'</code> y que tengan <code>nivel</code> menor a 20.`,
   pista:`El nuevo valor se calcula con el actual: <code>nivel = nivel + 5</code>. Dos condiciones en el WHERE, unidas con AND.`,
   sol:`UPDATE Pokemon SET nivel = nivel + 5 WHERE tipo = 'Agua' AND nivel < 20;`,
   check:`SELECT id, nombre, nivel FROM Pokemon ORDER BY id;` },
 { id:'M5', b:'lmd', ds:'pokemon', tipo:'dml', t:'UPDATE con subconsulta',
-  q:`Duplica el dinero de los entrenadores que tengan al menos un Pokémon de nivel 40 o más.`,
+  q:`En la tabla <code>Entrenador</code>, duplica el <code>dinero</code> de los entrenadores que tengan al menos un Pokémon con <code>nivel</code> de 40 o más. Los Pokémon están en la tabla <code>Pokemon</code> y se ligan con <code>Pokemon.curp_entrenador = Entrenador.curp</code>.`,
   pista:`<code>WHERE curp IN (SELECT curp_entrenador FROM Pokemon WHERE …)</code>.`,
   sol:`UPDATE Entrenador
 SET dinero = dinero * 2
 WHERE curp IN (SELECT curp_entrenador FROM Pokemon WHERE nivel >= 40);`,
   check:`SELECT nombre, dinero FROM Entrenador ORDER BY curp;` },
 { id:'M6', b:'lmd', ds:'pokemon', tipo:'dml', t:'Rellenar los NULL',
-  q:`Pon 0 en el dinero de todo entrenador que no lo tenga registrado.`,
+  q:`En la tabla <code>Entrenador</code>, pon <code>dinero</code> en 0 a los entrenadores que lo tienen en NULL (sin registrar).`,
   pista:`“No registrado” es NULL, y NULL se busca con IS.`,
   sol:`UPDATE Entrenador SET dinero = 0 WHERE dinero IS NULL;`,
   check:`SELECT nombre, dinero FROM Entrenador ORDER BY curp;` },
 { id:'M7', b:'lmd', ds:'pokemon', tipo:'dml', t:'Liberar a los salvajes',
-  q:`Borra a los Pokémon salvajes: los que no tienen entrenador.`,
+  q:`En la tabla <code>Pokemon</code>, borra a los Pokémon salvajes: los que tienen <code>curp_entrenador</code> en NULL.`,
   pista:`<code>= NULL</code> no encuentra nada.`,
   sol:`DELETE FROM Pokemon WHERE curp_entrenador IS NULL;`,
   check:`SELECT id, nombre FROM Pokemon ORDER BY id;` },
 { id:'M8', b:'lmd', ds:'pokemon', tipo:'dml', t:'Borrar padre e hijos',
-  q:`Borra a Misty del sistema junto con todos sus Pokémon.`,
+  q:`Borra a la entrenadora <code>'Misty'</code> (tabla <code>Entrenador</code>, columna <code>nombre</code>) y a todos sus Pokémon: las filas de la tabla <code>Pokemon</code> que tienen su CURP en <code>curp_entrenador</code>. El orden importa por la llave foránea.`,
   pista:`Dos DELETE. Primero los hijos (sus Pokémon), después la madre. Puedes encontrar su CURP con una subconsulta por nombre.`,
   sol:`DELETE FROM Pokemon
 WHERE curp_entrenador = (SELECT curp FROM Entrenador WHERE nombre = 'Misty');
 DELETE FROM Entrenador WHERE nombre = 'Misty';`,
   check:`SELECT 'Entrenador' AS tabla, nombre FROM Entrenador UNION ALL SELECT 'Pokemon', nombre FROM Pokemon ORDER BY 1, 2;` },
 { id:'M9', b:'lmd', ds:'pokemon', tipo:'dml', t:'INSERT … SELECT',
-  q:`Crea la tabla <code>Veterano(nombre VARCHAR(50), nivel INT)</code> y llénala con un solo <code>INSERT … SELECT</code> con nombre y nivel de los Pokémon de nivel mayor a 40.`,
+  q:`Crea la tabla <code>Veterano(nombre VARCHAR(50), nivel INT)</code> y llénala con un solo <code>INSERT … SELECT</code>, copiando <code>nombre</code> y <code>nivel</code> de las filas de la tabla <code>Pokemon</code> con <code>nivel</code> mayor a 40.`,
   pista:`En lugar de VALUES va un SELECT con las mismas columnas, en el mismo orden.`,
   sol:`CREATE TABLE Veterano (nombre VARCHAR(50), nivel INT);
 INSERT INTO Veterano (nombre, nivel)
@@ -2100,54 +2100,54 @@ SELECT nombre, nivel FROM Pokemon WHERE nivel > 40;`,
 
 /* ---------- SELECT ---------- */
 { id:'S1', b:'select', ds:'pokemon', tipo:'query', t:'Los de agua',
-  q:`Muestra <code>nombre</code> y <code>nivel</code> de los Pokémon de tipo <code>Agua</code>.`,
+  q:`De la tabla <code>Pokemon</code>, muestra <code>nombre</code> y <code>nivel</code> de los registros cuyo <code>tipo</code> es <code>'Agua'</code>.`,
   pista:`SELECT columnas FROM tabla WHERE condición.`,
   sol:`SELECT nombre, nivel FROM Pokemon WHERE tipo = 'Agua';` },
 { id:'S2', b:'select', ds:'pokemon', tipo:'query', t:'Tipos sin repetir',
-  q:`¿Qué tipos de Pokémon hay? Cada tipo una sola vez.`,
+  q:`De la tabla <code>Pokemon</code>, muestra la columna <code>tipo</code> sin repetir: cada tipo una sola vez.`,
   pista:`DISTINCT.`,
   sol:`SELECT DISTINCT tipo FROM Pokemon;` },
 { id:'S3', b:'select', ds:'pokemon', tipo:'query', ordered:true, t:'Rango y orden',
-  q:`<code>nombre</code> y <code>nivel</code> de los Pokémon con nivel entre 20 y 40 (incluidos), del más alto al más bajo.`,
+  q:`De la tabla <code>Pokemon</code>, muestra <code>nombre</code> y <code>nivel</code> de los registros con <code>nivel</code> entre 20 y 40 (incluidos), ordenados del nivel más alto al más bajo.`,
   pista:`BETWEEN incluye los extremos. Descendente es DESC.`,
   sol:`SELECT nombre, nivel FROM Pokemon WHERE nivel BETWEEN 20 AND 40 ORDER BY nivel DESC;` },
 { id:'S4', b:'select', ds:'pokemon', tipo:'query', t:'LIKE',
-  q:`<code>nombre</code> y <code>ciudad</code> de los entrenadores que viven en un pueblo (su ciudad empieza con <code>Pueblo</code>).`,
+  q:`De la tabla <code>Entrenador</code>, muestra <code>nombre</code> y <code>ciudad</code> de los entrenadores cuya <code>ciudad</code> empieza con <code>'Pueblo'</code>.`,
   pista:`<code>LIKE 'Pueblo%'</code>: el % significa “lo que sea después”.`,
   sol:`SELECT nombre, ciudad FROM Entrenador WHERE ciudad LIKE 'Pueblo%';` },
 { id:'S5', b:'select', ds:'pokemon', tipo:'query', t:'IS NULL',
-  q:`<code>nombre</code> de los Pokémon salvajes (sin entrenador).`,
+  q:`De la tabla <code>Pokemon</code>, muestra el <code>nombre</code> de los Pokémon salvajes: los que tienen <code>curp_entrenador</code> en NULL.`,
   pista:`IS NULL.`,
   sol:`SELECT nombre FROM Pokemon WHERE curp_entrenador IS NULL;` },
 { id:'S6', b:'select', ds:'pokemon', tipo:'query', ordered:true, t:'Top 3',
-  q:`Los 3 Pokémon de mayor nivel: <code>nombre</code> y <code>nivel</code>, del mayor al menor. Puedes usar <code>TOP</code> o <code>LIMIT</code>.`,
+  q:`De la tabla <code>Pokemon</code>, muestra <code>nombre</code> y <code>nivel</code> de los 3 registros con mayor <code>nivel</code>, del mayor al menor. Puedes usar TOP o LIMIT.`,
   pista:`Primero ordena, luego corta: <code>ORDER BY nivel DESC LIMIT 3</code> o <code>SELECT TOP 3 …</code>.`,
   sol:`SELECT nombre, nivel FROM Pokemon ORDER BY nivel DESC LIMIT 3;` },
 { id:'S7', b:'select', ds:'pokemon', tipo:'query', t:'AND con OR',
-  q:`<code>nombre</code>, <code>tipo</code> y <code>nivel</code> de los Pokémon de tipo Fuego o Planta que tengan nivel mayor a 20.`,
+  q:`De la tabla <code>Pokemon</code>, muestra <code>nombre</code>, <code>tipo</code> y <code>nivel</code> de los registros de tipo <code>'Fuego'</code> o <code>'Planta'</code> que además tengan <code>nivel</code> mayor a 20.`,
   pista:`AND se evalúa antes que OR. Sin paréntesis, tu consulta dice otra cosa.`,
   sol:`SELECT nombre, tipo, nivel FROM Pokemon WHERE (tipo = 'Fuego' OR tipo = 'Planta') AND nivel > 20;` },
 { id:'S8', b:'select', ds:'pokemon', tipo:'query', t:'Expresiones y alias',
-  q:`<code>nombre</code> de cada entrenador y su dinero con 16% de IVA en una columna llamada <code>con_iva</code>. Solo quienes tienen dinero registrado.`,
+  q:`De la tabla <code>Entrenador</code>, muestra <code>nombre</code> y el <code>dinero</code> multiplicado por 1.16 (16% de IVA) en una columna llamada <code>con_iva</code>. Solo los entrenadores con <code>dinero</code> registrado (no NULL).`,
   pista:`<code>dinero * 1.16 AS con_iva</code> y <code>WHERE dinero IS NOT NULL</code>.`,
   sol:`SELECT nombre, dinero * 1.16 AS con_iva FROM Entrenador WHERE dinero IS NOT NULL;` },
 
 /* ---------- JOIN ---------- */
 { id:'J1', b:'join', ds:'pokemon', tipo:'query', t:'Pokémon y entrenador',
-  q:`Nombre de cada Pokémon junto al nombre de su entrenador (2 columnas). Solo los que tienen entrenador.`,
+  q:`Muestra 2 columnas: el <code>nombre</code> de cada Pokémon (la tabla <code>Pokemon</code>) y el <code>nombre</code> de su entrenador (tabla <code>Entrenador</code>). Se ligan con <code>Pokemon.curp_entrenador = Entrenador.curp</code>. Solo los Pokémon que tienen entrenador.`,
   pista:`<code>FROM Pokemon P JOIN Entrenador E ON E.curp = P.curp_entrenador</code>.`,
   sol:`SELECT P.nombre AS pokemon, E.nombre AS entrenador
 FROM Pokemon P
 JOIN Entrenador E ON E.curp = P.curp_entrenador;` },
 { id:'J2', b:'join', ds:'pokemon', tipo:'query', t:'Contar incluyendo a quien tiene cero',
-  q:`Todos los entrenadores con cuántos Pokémon tienen, incluido quien tiene 0: <code>nombre</code> y <code>total</code>.`,
+  q:`Muestra a todos los entrenadores de la tabla <code>Entrenador</code> y cuántos Pokémon tiene cada uno en la tabla <code>Pokemon</code> (se ligan con <code>Pokemon.curp_entrenador = Entrenador.curp</code>), incluido quien tiene 0. Columnas: <code>nombre</code> del entrenador y <code>total</code>.`,
   pista:`LEFT JOIN desde Entrenador. Y cuenta <code>COUNT(P.id)</code>, no <code>COUNT(*)</code>: el asterisco cuenta la fila con NULL como 1.`,
   sol:`SELECT E.nombre, COUNT(P.id) AS total
 FROM Entrenador E
 LEFT JOIN Pokemon P ON P.curp_entrenador = E.curp
 GROUP BY E.curp, E.nombre;` },
 { id:'J3', b:'join', ds:'pokemon', tipo:'query', ordered:true, t:'Tres tablas',
-  q:`Para cada medalla: nombre del entrenador, ciudad del gimnasio y fecha, ordenado por fecha (de la más antigua a la más reciente).`,
+  q:`Para cada fila de la tabla <code>Medalla</code>: el <code>nombre</code> del entrenador (tabla <code>Entrenador</code>, con <code>Medalla.curp_entrenador = Entrenador.curp</code>), la <code>ciudad</code> del gimnasio (tabla <code>Gimnasio</code>, con <code>Medalla.id_gimnasio = Gimnasio.id</code>) y la <code>fecha</code> de la medalla. Ordena por <code>fecha</code>, de la más antigua a la más reciente.`,
   pista:`Medalla en el centro: un JOIN a Entrenador y otro a Gimnasio.`,
   sol:`SELECT E.nombre, G.ciudad, M.fecha
 FROM Medalla M
@@ -2155,7 +2155,7 @@ JOIN Entrenador E ON E.curp = M.curp_entrenador
 JOIN Gimnasio G   ON G.id   = M.id_gimnasio
 ORDER BY M.fecha;` },
 { id:'J4', b:'join', ds:'pokemon', tipo:'query', t:'Filtrar por la otra tabla',
-  q:`<code>nombre</code> de los Pokémon cuyos entrenadores viven en <code>Pueblo Paleta</code>.`,
+  q:`Muestra el <code>nombre</code> de los Pokémon (la tabla <code>Pokemon</code>) cuyo entrenador (tabla <code>Entrenador</code>, con <code>Pokemon.curp_entrenador = Entrenador.curp</code>) tiene <code>ciudad</code> igual a <code>'Pueblo Paleta'</code>.`,
   pista:`El filtro es sobre una columna de Entrenador, pero lo que muestras es de Pokemon.`,
   sol:`SELECT P.nombre
 FROM Pokemon P
@@ -2164,19 +2164,19 @@ WHERE E.ciudad = 'Pueblo Paleta';` },
 
 /* ---------- AGREGACIÓN ---------- */
 { id:'G1', b:'agg', ds:'pokemon', tipo:'query', t:'Resumen general',
-  q:`En una fila: total de Pokémon, nivel promedio, nivel máximo y nivel mínimo (4 columnas, en ese orden).`,
+  q:`De la tabla <code>Pokemon</code>, en una sola fila: cuántos registros hay, el <code>nivel</code> promedio, el máximo y el mínimo (4 columnas, en ese orden).`,
   pista:`COUNT, AVG, MAX, MIN. Sin GROUP BY toda la tabla es un grupo.`,
   sol:`SELECT COUNT(*) AS total, AVG(nivel) AS promedio, MAX(nivel) AS maximo, MIN(nivel) AS minimo FROM Pokemon;` },
 { id:'G2', b:'agg', ds:'pokemon', tipo:'query', t:'COUNT(*) contra COUNT(columna)',
-  q:`¿Cuántos entrenadores hay y cuántos tienen dinero registrado? (2 columnas)`,
+  q:`De la tabla <code>Entrenador</code>, en una fila: cuántos entrenadores hay y cuántos tienen <code>dinero</code> registrado, es decir, no NULL (2 columnas).`,
   pista:`COUNT(columna) ignora los NULL.`,
   sol:`SELECT COUNT(*) AS total, COUNT(dinero) AS con_dinero FROM Entrenador;` },
 { id:'G3', b:'agg', ds:'pokemon', tipo:'query', t:'Por tipo',
-  q:`Cuántos Pokémon hay de cada tipo: <code>tipo</code> y <code>cantidad</code>.`,
+  q:`De la tabla <code>Pokemon</code>, cuántos registros hay de cada <code>tipo</code>. Columnas: <code>tipo</code> y <code>cantidad</code>.`,
   pista:`GROUP BY tipo.`,
   sol:`SELECT tipo, COUNT(*) AS cantidad FROM Pokemon GROUP BY tipo;` },
 { id:'G4', b:'agg', ds:'pokemon', tipo:'query', t:'HAVING',
-  q:`Entrenadores cuyo nivel promedio de Pokémon es mayor a 25: <code>nombre</code> del entrenador y <code>promedio</code>.`,
+  q:`Para cada entrenador con Pokémon, calcula el promedio de <code>nivel</code> de sus Pokémon (la tabla <code>Pokemon</code>, ligada con <code>Pokemon.curp_entrenador = Entrenador.curp</code>) y muestra solo a quienes tienen promedio mayor a 25. Columnas: <code>nombre</code> del entrenador (tabla <code>Entrenador</code>) y <code>promedio</code>.`,
   pista:`JOIN para tener el nombre, GROUP BY por entrenador, y la condición sobre AVG en HAVING.`,
   sol:`SELECT E.nombre, AVG(P.nivel) AS promedio
 FROM Entrenador E
@@ -2184,7 +2184,7 @@ JOIN Pokemon P ON P.curp_entrenador = E.curp
 GROUP BY E.curp, E.nombre
 HAVING AVG(P.nivel) > 25;` },
 { id:'G5', b:'agg', ds:'pokemon', tipo:'query', t:'WHERE y HAVING juntos',
-  q:`Contando solo Pokémon con entrenador, los tipos que tienen 3 o más: <code>tipo</code> y <code>cantidad</code>.`,
+  q:`De la tabla <code>Pokemon</code>, contando solo los registros que tienen entrenador (<code>curp_entrenador</code> no NULL), muestra los tipos que tienen 3 o más. Columnas: <code>tipo</code> y <code>cantidad</code>.`,
   pista:`“Solo con entrenador” es una condición sobre filas (WHERE). “3 o más” es sobre el grupo (HAVING).`,
   sol:`SELECT tipo, COUNT(*) AS cantidad
 FROM Pokemon
@@ -2192,25 +2192,25 @@ WHERE curp_entrenador IS NOT NULL
 GROUP BY tipo
 HAVING COUNT(*) >= 3;` },
 { id:'G6', b:'agg', ds:'pokemon', tipo:'query', ordered:true, t:'Sumar por ciudad',
-  q:`Dinero total de los entrenadores por ciudad, de mayor a menor: <code>ciudad</code> y <code>total</code>.`,
+  q:`De la tabla <code>Entrenador</code>, suma el <code>dinero</code> por <code>ciudad</code> y ordena de mayor a menor. Columnas: <code>ciudad</code> y <code>total</code>.`,
   pista:`SUM(dinero), GROUP BY ciudad, ORDER BY total DESC. Una ciudad sale en NULL: ahí solo vive alguien sin dinero registrado.`,
   sol:`SELECT ciudad, SUM(dinero) AS total FROM Entrenador GROUP BY ciudad ORDER BY total DESC;` },
 
 /* ---------- SUBCONSULTAS ---------- */
 { id:'Q1', b:'sub', ds:'pokemon', tipo:'query', t:'Arriba del promedio',
-  q:`<code>nombre</code> y <code>nivel</code> de los Pokémon con nivel mayor al promedio de todos.`,
+  q:`De la tabla <code>Pokemon</code>, muestra <code>nombre</code> y <code>nivel</code> de los registros cuyo <code>nivel</code> es mayor al promedio de <code>nivel</code> de toda la tabla.`,
   pista:`<code>WHERE nivel &gt; (SELECT AVG(nivel) FROM Pokemon)</code>. No puedes poner AVG directo en el WHERE.`,
   sol:`SELECT nombre, nivel FROM Pokemon WHERE nivel > (SELECT AVG(nivel) FROM Pokemon);` },
 { id:'Q2', b:'sub', ds:'pokemon', tipo:'query', t:'El más rico, sin LIMIT',
-  q:`<code>nombre</code> y <code>dinero</code> del entrenador o entrenadores con más dinero, sin usar LIMIT ni TOP.`,
+  q:`De la tabla <code>Entrenador</code>, muestra <code>nombre</code> y <code>dinero</code> del entrenador (o entrenadores, si hay empate) con más dinero, sin usar LIMIT ni TOP.`,
   pista:`Compara contra <code>(SELECT MAX(dinero) FROM Entrenador)</code>. Así, si hay empate, salen todos.`,
   sol:`SELECT nombre, dinero FROM Entrenador WHERE dinero = (SELECT MAX(dinero) FROM Entrenador);` },
 { id:'Q3', b:'sub', ds:'pokemon', tipo:'query', t:'NOT IN',
-  q:`<code>nombre</code> de los entrenadores que no tienen ninguna medalla.`,
+  q:`Muestra el <code>nombre</code> de los entrenadores de la tabla <code>Entrenador</code> que no aparecen en la tabla <code>Medalla</code> (la columna <code>Medalla.curp_entrenador</code> guarda la CURP del entrenador).`,
   pista:`<code>WHERE curp NOT IN (SELECT curp_entrenador FROM Medalla)</code>. También sale con LEFT JOIN y IS NULL.`,
   sol:`SELECT nombre FROM Entrenador WHERE curp NOT IN (SELECT curp_entrenador FROM Medalla);` },
 { id:'Q4', b:'sub', ds:'pokemon', tipo:'query', t:'Los que tienen todas',
-  q:`<code>nombre</code> de los entrenadores que tienen medalla de todos los gimnasios. No escribas el número de gimnasios a mano.`,
+  q:`Muestra el <code>nombre</code> de los entrenadores (tabla <code>Entrenador</code>) que tienen medalla de todos los gimnasios: su número de filas en <code>Medalla</code> es igual al número de filas de <code>Gimnasio</code>. No escribas ese número a mano.`,
   pista:`Agrupa las medallas por entrenador y compara su COUNT con <code>(SELECT COUNT(*) FROM Gimnasio)</code> en el HAVING.`,
   sol:`SELECT E.nombre
 FROM Entrenador E
@@ -2218,7 +2218,7 @@ JOIN Medalla M ON M.curp_entrenador = E.curp
 GROUP BY E.curp, E.nombre
 HAVING COUNT(*) = (SELECT COUNT(*) FROM Gimnasio);` },
 { id:'Q5', b:'sub', ds:'pokemon', tipo:'query', ordered:true, t:'Tabla derivada, como en la diapositiva',
-  q:`Para cada entrenador: <code>nombre</code> y el nivel de su Pokémon más fuerte (<code>maximo</code>), solo si ese máximo es 40 o más, de mayor a menor. Hazlo con una subconsulta en el FROM.`,
+  q:`Para cada entrenador: su <code>nombre</code> (tabla <code>Entrenador</code>) y el <code>nivel</code> más alto de sus Pokémon (la tabla <code>Pokemon</code>, por <code>curp_entrenador</code>) en una columna <code>maximo</code>. Solo si ese máximo es 40 o más, de mayor a menor. Hazlo con una subconsulta en el FROM, como en la diapositiva.`,
   pista:`Adentro: <code>SELECT curp_entrenador, MAX(nivel) AS maximo FROM Pokemon GROUP BY … HAVING …</code>. Afuera la unes con Entrenador, igual que P en la diapositiva final.`,
   sol:`SELECT E.nombre, M.maximo
 FROM Entrenador E,
@@ -2231,15 +2231,15 @@ ORDER BY M.maximo DESC;` },
 
 /* ---------- TIENDA ---------- */
 { id:'T1', b:'tienda', ds:'tienda', tipo:'query', t:'Promedio de subtotales',
-  q:`Calcula el promedio de los subtotales de todas las facturas.`,
+  q:`De la tabla <code>FacturaEncabezado</code>, calcula el promedio de la columna <code>Subtotal</code> de todas las facturas.`,
   pista:`AVG sobre FacturaEncabezado.`,
   sol:`SELECT AVG(Subtotal) AS Promedio FROM FacturaEncabezado;` },
 { id:'T2', b:'tienda', ds:'tienda', tipo:'query', t:'Máximo de un cliente',
-  q:`¿Cuál es el subtotal más grande del cliente 1?`,
+  q:`De la tabla <code>FacturaEncabezado</code>, ¿cuál es el <code>Subtotal</code> más grande entre las facturas con <code>IDCliente</code> = 1?`,
   pista:`MAX con WHERE.`,
   sol:`SELECT MAX(Subtotal) AS Mayor FROM FacturaEncabezado WHERE IDCliente = 1;` },
 { id:'T3', b:'tienda', ds:'tienda', tipo:'query', ordered:true, t:'“Cálenle ustedes”',
-  q:`Subtotal promedio por cliente, de mayor a menor, mostrando <code>Nombre</code>, <code>ApPaterno</code> y el promedio (3 columnas) en lugar del ID.`,
+  q:`Subtotal promedio por cliente, de mayor a menor. Muestra <code>Nombre</code> y <code>ApPaterno</code> (tabla <code>Cliente</code>) y el promedio de <code>Subtotal</code> de sus facturas (tabla <code>FacturaEncabezado</code>, ligada por <code>IDCliente</code>): 3 columnas.`,
   pista:`JOIN Cliente con FacturaEncabezado, GROUP BY por el cliente (ID, Nombre y ApPaterno) y ORDER BY el promedio DESC.`,
   sol:`SELECT C.Nombre, C.ApPaterno, AVG(F.Subtotal) AS Promedio
 FROM Cliente C
@@ -2247,7 +2247,7 @@ JOIN FacturaEncabezado F ON F.IDCliente = C.IDCliente
 GROUP BY C.IDCliente, C.Nombre, C.ApPaterno
 ORDER BY Promedio DESC;` },
 { id:'T4', b:'tienda', ds:'tienda', tipo:'query', ordered:true, t:'Con HAVING',
-  q:`Lo mismo que T3, pero solo los clientes con promedio mayor a 50.`,
+  q:`Lo mismo que T3 (<code>Nombre</code>, <code>ApPaterno</code> y promedio de <code>Subtotal</code>, de mayor a menor), pero solo los clientes con promedio mayor a 50.`,
   pista:`Agrega el HAVING entre GROUP BY y ORDER BY.`,
   sol:`SELECT C.Nombre, C.ApPaterno, AVG(F.Subtotal) AS Promedio
 FROM Cliente C
@@ -2256,11 +2256,11 @@ GROUP BY C.IDCliente, C.Nombre, C.ApPaterno
 HAVING AVG(F.Subtotal) > 50
 ORDER BY Promedio DESC;` },
 { id:'T5', b:'tienda', ds:'tienda', tipo:'query', t:'Clientes sin compras',
-  q:`<code>Nombre</code> y <code>ApPaterno</code> de los clientes que no tienen ninguna factura.`,
+  q:`Muestra <code>Nombre</code> y <code>ApPaterno</code> de los clientes de la tabla <code>Cliente</code> que no tienen ninguna factura en <code>FacturaEncabezado</code> (se ligan por <code>IDCliente</code>).`,
   pista:`NOT IN con la lista de IDCliente de FacturaEncabezado.`,
   sol:`SELECT Nombre, ApPaterno FROM Cliente WHERE IDCliente NOT IN (SELECT IDCliente FROM FacturaEncabezado);` },
 { id:'T6', b:'tienda', ds:'tienda', tipo:'query', ordered:true, t:'Factura con nombres',
-  q:`Por número de factura: <code>IDFactura</code>, nombre del cliente, nombre del empleado y <code>Total</code> (4 columnas).`,
+  q:`Para cada factura de <code>FacturaEncabezado</code>, ordenada por <code>IDFactura</code>: <code>IDFactura</code>, el <code>Nombre</code> del cliente (tabla <code>Cliente</code>, por <code>IDCliente</code>), el <code>Nombre</code> del empleado (tabla <code>Empleado</code>, por <code>IDEmpleado</code>) y el <code>Total</code>. 4 columnas.`,
   pista:`Dos JOIN desde FacturaEncabezado. Las dos tablas tienen columna <code>Nombre</code>: usa alias.`,
   sol:`SELECT F.IDFactura, C.Nombre AS Cliente, E.Nombre AS Empleado, F.Total
 FROM FacturaEncabezado F
@@ -2268,7 +2268,7 @@ JOIN Cliente C  ON C.IDCliente  = F.IDCliente
 JOIN Empleado E ON E.IDEmpleado = F.IDEmpleado
 ORDER BY F.IDFactura;` },
 { id:'T7', b:'tienda', ds:'tienda', tipo:'query', t:'El más vendido',
-  q:`El producto más vendido en piezas: <code>Descripcion</code> y total de piezas (1 fila).`,
+  q:`El producto más vendido en piezas: suma <code>Cantidad</code> de <code>FacturaDetalle</code> por producto y muestra la <code>Descripcion</code> (tabla <code>Producto</code>, por <code>IDProducto</code>) y el total de piezas del primero. 1 fila, 2 columnas.`,
   pista:`SUM(Cantidad) agrupado por producto, ordenado DESC, solo el primero.`,
   sol:`SELECT P.Descripcion, SUM(D.Cantidad) AS Piezas
 FROM FacturaDetalle D
@@ -2277,7 +2277,7 @@ GROUP BY P.IDProducto, P.Descripcion
 ORDER BY Piezas DESC
 LIMIT 1;` },
 { id:'T8', b:'tienda', ds:'tienda', tipo:'query', t:'Ventas por categoría',
-  q:`Total vendido (suma de <code>TotalLinea</code>) por categoría: <code>DescripcionCategoria</code> y el total.`,
+  q:`Total vendido por categoría: suma <code>TotalLinea</code> de <code>FacturaDetalle</code>, pasando por <code>Producto</code> (por <code>IDProducto</code>) hasta <code>Categoria</code> (por <code>IDCategoria</code>). Columnas: <code>DescripcionCategoria</code> y el total.`,
   pista:`Tres tablas: FacturaDetalle → Producto → Categoria.`,
   sol:`SELECT C.DescripcionCategoria, SUM(D.TotalLinea) AS Vendido
 FROM FacturaDetalle D
@@ -2286,13 +2286,13 @@ JOIN Categoria C ON C.IDCategoria = P.IDCategoria
 GROUP BY C.IDCategoria, C.DescripcionCategoria;` },
 { id:'T9', b:'tienda', ds:'tienda', tipo:'dml', t:'Importe de cada línea',
   setup:`UPDATE FacturaDetalle SET TotalLinea = NULL;`,
-  q:`En esta copia, <code>TotalLinea</code> está vacío en todo el detalle. Calcúlalo: cantidad por precio.`,
+  q:`En esta copia de la base Tienda, la columna <code>TotalLinea</code> de la tabla <code>FacturaDetalle</code> está en NULL en todas las filas. Llénala con <code>Cantidad * Precio</code>.`,
   pista:`Un UPDATE sin WHERE, porque es para todas las líneas.`,
   sol:`UPDATE FacturaDetalle SET TotalLinea = Cantidad * Precio;`,
   check:`SELECT IDFactura, IDProducto, TotalLinea FROM FacturaDetalle ORDER BY IDFactura, IDProducto;` },
 { id:'T10', b:'tienda', ds:'tienda', tipo:'dml', t:'SUM() dentro de un UPDATE (LAB, actividad 4)',
   setup:`UPDATE FacturaEncabezado SET Subtotal = NULL, Iva = NULL, Total = NULL;`,
-  q:`Subtotal, Iva y Total están vacíos en todas las facturas. Calcula <code>Subtotal</code> como la suma de <code>TotalLinea</code> de su detalle, <code>Iva</code> como el 16% del subtotal y <code>Total</code> como subtotal más IVA.`,
+  q:`En esta copia de la base Tienda, <code>Subtotal</code>, <code>Iva</code> y <code>Total</code> de la tabla <code>FacturaEncabezado</code> están en NULL. Llénalos: <code>Subtotal</code> = suma de <code>TotalLinea</code> de las filas de <code>FacturaDetalle</code> con el mismo <code>IDFactura</code>; <code>Iva</code> = 16% del subtotal; <code>Total</code> = subtotal + IVA.`,
   pista:`Subconsulta correlacionada con SUM para el Subtotal. Iva y Total en un segundo UPDATE: en el mismo SET verían el Subtotal en NULL.`,
   sol:`UPDATE FacturaEncabezado
 SET Subtotal = (SELECT SUM(D.TotalLinea)
@@ -2303,14 +2303,14 @@ SET Iva = Subtotal * 0.16,
     Total = Subtotal * 1.16;`,
   check:`SELECT IDFactura, Subtotal, Iva, Total FROM FacturaEncabezado ORDER BY IDFactura;` },
 { id:'T11', b:'tienda', ds:'tienda', tipo:'dml', t:'Aumento por categoría',
-  q:`Aumenta 10% el <code>PrecioUnitario</code> de los productos de la categoría <code>papeleria</code>, sin escribir su ID a mano.`,
+  q:`En la tabla <code>Producto</code>, aumenta 10% el <code>PrecioUnitario</code> de los productos de la categoría <code>'papeleria'</code>. La categoría está en la tabla <code>Categoria</code> (columna <code>DescripcionCategoria</code>) y se liga por <code>IDCategoria</code>. No escribas el ID de la categoría a mano.`,
   pista:`<code>WHERE IDCategoria = (SELECT IDCategoria FROM Categoria WHERE DescripcionCategoria = 'papeleria')</code>.`,
   sol:`UPDATE Producto
 SET PrecioUnitario = PrecioUnitario * 1.10
 WHERE IDCategoria = (SELECT IDCategoria FROM Categoria WHERE DescripcionCategoria = 'papeleria');`,
   check:`SELECT IDProducto, PrecioUnitario FROM Producto ORDER BY IDProducto;` },
 { id:'T12', b:'tienda', ds:'tienda', tipo:'dml', t:'Borrar una factura completa',
-  q:`Borra la factura 5 completa: su encabezado y su detalle.`,
+  q:`Borra la factura con <code>IDFactura</code> = 5: sus filas en <code>FacturaDetalle</code> y su fila en <code>FacturaEncabezado</code>.`,
   pista:`Entidad débil primero: el detalle, luego el encabezado.`,
   sol:`DELETE FROM FacturaDetalle WHERE IDFactura = 5;
 DELETE FROM FacturaEncabezado WHERE IDFactura = 5;`,
@@ -2319,12 +2319,12 @@ DELETE FROM FacturaEncabezado WHERE IDFactura = 5;`,
 /* ---------- ÁLGEBRA ---------- */
 { id:'A1', b:'algebra', ds:'pokemon', tipo:'query', t:'σ y π',
   alg:`π<sub>nombre, nivel</sub> ( σ<sub>tipo = 'Fuego'</sub> ( Pokemon ) )`,
-  q:`Traduce la expresión a SQL.`,
+  q:`Traduce la expresión a SQL sobre la base Pokémon (el botón Tablas muestra sus columnas).`,
   pista:`σ es el WHERE; π son las columnas, sin duplicados.`,
   sol:`SELECT DISTINCT nombre, nivel FROM Pokemon WHERE tipo = 'Fuego';` },
 { id:'A2', b:'algebra', ds:'pokemon', tipo:'query', t:'π quita duplicados',
   alg:`π<sub>Entrenador.nombre</sub> ( Entrenador ⋈<sub>curp = curp_entrenador</sub> σ<sub>nivel ≥ 40</sub> ( Pokemon ) )`,
-  q:`Traduce la expresión a SQL.`,
+  q:`Traduce la expresión a SQL sobre la base Pokémon (el botón Tablas muestra sus columnas).`,
   pista:`Red tiene tres Pokémon de nivel 40 o más. En álgebra aparece una vez.`,
   sol:`SELECT DISTINCT E.nombre
 FROM Entrenador E
@@ -2332,47 +2332,47 @@ JOIN Pokemon P ON E.curp = P.curp_entrenador
 WHERE P.nivel >= 40;` },
 { id:'A3', b:'algebra', ds:'pokemon', tipo:'query', t:'Diferencia',
   alg:`π<sub>curp</sub> ( Entrenador ) − π<sub>curp_entrenador</sub> ( Medalla )`,
-  q:`Traduce la expresión a SQL.`,
+  q:`Traduce la expresión a SQL sobre la base Pokémon (el botón Tablas muestra sus columnas).`,
   pista:`EXCEPT entre dos SELECT de una columna cada uno.`,
   sol:`SELECT curp FROM Entrenador
 EXCEPT
 SELECT curp_entrenador FROM Medalla;` },
 { id:'A4', b:'algebra', ds:'pokemon', tipo:'query', t:'Unión',
   alg:`π<sub>ciudad</sub> ( Entrenador ) ∪ π<sub>ciudad</sub> ( Gimnasio )`,
-  q:`Traduce la expresión a SQL.`,
+  q:`Traduce la expresión a SQL sobre la base Pokémon (el botón Tablas muestra sus columnas).`,
   pista:`UNION ya quita los duplicados; UNION ALL no.`,
   sol:`SELECT ciudad FROM Entrenador
 UNION
 SELECT ciudad FROM Gimnasio;` },
 { id:'A5', b:'algebra', ds:'pokemon', tipo:'query', t:'Intersección',
   alg:`π<sub>ciudad</sub> ( Entrenador ) ∩ π<sub>ciudad</sub> ( Gimnasio )`,
-  q:`Traduce la expresión a SQL.`,
+  q:`Traduce la expresión a SQL sobre la base Pokémon (el botón Tablas muestra sus columnas).`,
   pista:`INTERSECT.`,
   sol:`SELECT ciudad FROM Entrenador
 INTERSECT
 SELECT ciudad FROM Gimnasio;` },
 { id:'A6', b:'algebra', ds:'pokemon', tipo:'query', t:'× con σ',
   alg:`π<sub>Entrenador.nombre, Gimnasio.lider</sub> ( σ<sub>Entrenador.ciudad = Gimnasio.ciudad</sub> ( Entrenador × Gimnasio ) )`,
-  q:`Traduce la expresión a SQL.`,
+  q:`Traduce la expresión a SQL sobre la base Pokémon (el botón Tablas muestra sus columnas).`,
   pista:`El producto cartesiano es <code>FROM Entrenador, Gimnasio</code> (o CROSS JOIN) y la σ va en el WHERE. Es lo mismo que un JOIN.`,
   sol:`SELECT DISTINCT E.nombre, G.lider
 FROM Entrenador E, Gimnasio G
 WHERE E.ciudad = G.ciudad;` },
 { id:'A7', b:'algebra', ds:'pokemon', tipo:'query', t:'ρ: una tabla consigo misma',
   alg:`π<sub>A.nombre, B.nombre</sub> ( σ<sub>A.tipo = B.tipo ∧ A.id &lt; B.id ∧ A.tipo = 'Fuego'</sub> ( ρ<sub>A</sub>(Pokemon) × ρ<sub>B</sub>(Pokemon) ) )`,
-  q:`Traduce la expresión a SQL. Son las parejas de Pokémon de fuego.`,
+  q:`Traduce la expresión a SQL sobre la base Pokémon (el botón Tablas muestra sus columnas). Son las parejas de Pokémon de fuego.`,
   pista:`ρ es el alias: <code>FROM Pokemon A, Pokemon B</code>. El símbolo ∧ es AND.`,
   sol:`SELECT A.nombre, B.nombre
 FROM Pokemon A, Pokemon B
 WHERE A.tipo = B.tipo AND A.id < B.id AND A.tipo = 'Fuego';` },
 { id:'A8', b:'algebra', ds:'pokemon', tipo:'query', t:'γ agrupación',
   alg:`<sub>tipo</sub>γ<sub>MAX(nivel) → maximo</sub> ( Pokemon )`,
-  q:`Traduce la expresión a SQL. Lo que va antes de γ es el GROUP BY.`,
+  q:`Traduce la expresión a SQL sobre la base Pokémon (el botón Tablas muestra sus columnas). Lo que va antes de γ es el GROUP BY.`,
   pista:`<code>SELECT tipo, MAX(nivel) AS maximo … GROUP BY tipo</code>.`,
   sol:`SELECT tipo, MAX(nivel) AS maximo FROM Pokemon GROUP BY tipo;` },
 { id:'A9', b:'algebra', ds:'pokemon', tipo:'query', t:'÷ división',
   alg:`π<sub>curp_entrenador, id_gimnasio</sub> ( Medalla ) ÷ ρ<sub>id_gimnasio ← id</sub> ( π<sub>id</sub> ( Gimnasio ) )`,
-  q:`Traduce la expresión a SQL. El resultado es una sola columna: <code>curp_entrenador</code>.`,
+  q:`Traduce la expresión a SQL sobre la base Pokémon (el botón Tablas muestra sus columnas). El resultado es una sola columna: <code>curp_entrenador</code>.`,
   pista:`“Tiene medalla de todos los gimnasios”: GROUP BY curp_entrenador y HAVING COUNT(DISTINCT id_gimnasio) igual al total de gimnasios. También vale el doble NOT EXISTS.`,
   sol:`SELECT curp_entrenador
 FROM Medalla
@@ -2381,7 +2381,7 @@ HAVING COUNT(DISTINCT id_gimnasio) = (SELECT COUNT(*) FROM Gimnasio);` },
 
 /* ---------- PROCEDIMIENTOS ---------- */
 { id:'P1', b:'proc', ds:'pokemon', tipo:'proc', t:'Sin parámetros',
-  q:`Crea el procedimiento <b>ListarAgua</b>, sin parámetros, que devuelva <code>nombre</code> y <code>nivel</code> de los Pokémon de tipo <code>Agua</code>.`,
+  q:`Crea el procedimiento <code>ListarAgua</code>, sin parámetros, que devuelva <code>nombre</code> y <code>nivel</code> de las filas de la tabla <code>Pokemon</code> con <code>tipo</code> = <code>'Agua'</code>.`,
   pista:`<code>CREATE PROCEDURE ListarAgua AS BEGIN … END</code>, y adentro el SELECT de siempre. Para probarlo: GO y luego <code>EXEC ListarAgua;</code>.`,
   sol:`CREATE PROCEDURE ListarAgua
 AS
@@ -2393,7 +2393,7 @@ BEGIN
 END`,
   probes:[ { l:'EXEC ListarAgua', sql:'EXEC ListarAgua;', e:'ok' } ]},
 { id:'P2', b:'proc', ds:'pokemon', tipo:'proc', t:'Un parámetro de entrada',
-  q:`Crea <b>PokemonPorTipo</b> que reciba <code>@tipo VARCHAR(20)</code> y devuelva <code>nombre</code> y <code>nivel</code> de los Pokémon de ese tipo.`,
+  q:`Crea el procedimiento <code>PokemonPorTipo</code> con el parámetro <code>@tipo VARCHAR(20)</code>. Debe devolver <code>nombre</code> y <code>nivel</code> de las filas de la tabla <code>Pokemon</code> cuyo <code>tipo</code> sea igual a <code>@tipo</code>.`,
   pista:`En el WHERE se compara con el parámetro: <code>WHERE tipo = @tipo</code>. Cuidado: <code>VARCHAR</code> sin tamaño en un parámetro vale <code>VARCHAR(1)</code> y corta el texto.`,
   sol:`CREATE PROCEDURE PokemonPorTipo
   @tipo VARCHAR(20)
@@ -2411,7 +2411,7 @@ END`,
     { l:"EXEC PokemonPorTipo 'Roca' (no hay ninguno)", sql:"EXEC PokemonPorTipo 'Roca';", e:'ok' }
   ]},
 { id:'P3', b:'proc', ds:'pokemon', tipo:'proc', t:'Valor por omisión',
-  q:`Crea <b>PokemonFuertes</b> con el parámetro <code>@minimo INT</code> que valga 40 si no lo mandan. Devuelve <code>nombre</code> y <code>nivel</code> de los Pokémon con nivel mayor o igual a <code>@minimo</code>.`,
+  q:`Crea el procedimiento <code>PokemonFuertes</code> con el parámetro <code>@minimo INT</code>, que valga 40 si no lo mandan. Debe devolver <code>nombre</code> y <code>nivel</code> de las filas de la tabla <code>Pokemon</code> con <code>nivel</code> mayor o igual a <code>@minimo</code>.`,
   pista:`El valor por omisión se escribe en la declaración del parámetro: <code>@minimo INT = 40</code>.`,
   sol:`CREATE PROCEDURE PokemonFuertes
   @minimo INT = 40
@@ -2428,7 +2428,7 @@ END`,
     { l:'EXEC PokemonFuertes @minimo = 30', sql:'EXEC PokemonFuertes @minimo = 30;', e:'ok' }
   ]},
 { id:'P4', b:'proc', ds:'pokemon', tipo:'proc', t:'Un INSERT con parámetros',
-  q:`Crea <b>AltaEntrenador</b> con <code>@curp CHAR(18)</code>, <code>@nombre VARCHAR(50)</code>, <code>@edad INT</code>, <code>@genero CHAR(1)</code> y <code>@ciudad VARCHAR(50)</code>. Debe insertar al entrenador con dinero 0.`,
+  q:`Crea el procedimiento <code>AltaEntrenador</code> con los parámetros <code>@curp CHAR(18)</code>, <code>@nombre VARCHAR(50)</code>, <code>@edad INT</code>, <code>@genero CHAR(1)</code> y <code>@ciudad VARCHAR(50)</code>. Debe insertar una fila en la tabla <code>Entrenador</code> (columnas <code>curp</code>, <code>nombre</code>, <code>edad</code>, <code>genero</code>, <code>dinero</code>, <code>ciudad</code>) con esos datos y <code>dinero</code> = 0.`,
   pista:`Un INSERT con la lista de columnas y, en VALUES, los parámetros: <code>VALUES (@curp, @nombre, @edad, @genero, 0, @ciudad)</code>.`,
   sol:`CREATE PROCEDURE AltaEntrenador
   @curp    CHAR(18),
@@ -2448,7 +2448,7 @@ END`,
     { l:'Con una CURP que ya existe (debe fallar y no insertar)', sql:"EXEC AltaEntrenador 'ASKE100522HPLTRS01', 'Ash', 10, 'M', 'Pueblo Paleta';\nGO\nSELECT COUNT(*) AS entrenadores FROM Entrenador;", e:'error' }
   ]},
 { id:'P5', b:'proc', ds:'pokemon', tipo:'proc', t:'Validar reglas con RAISERROR',
-  q:`Crea <b>AltaPokemon</b> con <code>@id INT</code>, <code>@nombre VARCHAR(50)</code>, <code>@tipo VARCHAR(20)</code>, <code>@nivel INT</code> y <code>@curp CHAR(18)</code>. Reglas: si el entrenador no existe, avisa con un error y no insertes; si el entrenador ya tiene 6 Pokémon, avisa con un error y no insertes. Si todo está bien, inserta.`,
+  q:`Crea el procedimiento <code>AltaPokemon</code> con <code>@id INT</code>, <code>@nombre VARCHAR(50)</code>, <code>@tipo VARCHAR(20)</code>, <code>@nivel INT</code> y <code>@curp CHAR(18)</code>. Debe insertar una fila en la tabla <code>Pokemon</code> (columnas <code>id</code>, <code>nombre</code>, <code>tipo</code>, <code>nivel</code>, <code>curp_entrenador</code>), con dos reglas: si no hay un entrenador con esa <code>curp</code> en la tabla <code>Entrenador</code>, avisa con un error y no insertes; si ese entrenador ya tiene 6 filas en la tabla <code>Pokemon</code>, avisa con un error y no insertes.`,
   pista:`<code>IF NOT EXISTS (SELECT 1 FROM Entrenador WHERE curp = @curp)</code> y <code>IF (SELECT COUNT(*) FROM Pokemon WHERE curp_entrenador = @curp) &gt;= 6</code>. Cada uno con <code>BEGIN RAISERROR('…', 16, 1); RETURN; END</code>. Sin RETURN el procedimiento sigue e inserta de todos modos.`,
   sol:`CREATE PROCEDURE AltaPokemon
   @id     INT,
@@ -2478,7 +2478,7 @@ END`,
     { l:'Entrenador que no existe (debe fallar y no insertar)', sql:"EXEC AltaPokemon 33, 'Ditto', 'Normal', 10, 'NOEXISTE';\nGO\nSELECT COUNT(*) AS pokemon FROM Pokemon;", e:'error' }
   ]},
 { id:'P6', b:'proc', ds:'pokemon', tipo:'proc', t:'Parámetro OUTPUT',
-  q:`Crea <b>TotalPokemon</b> con <code>@curp CHAR(18)</code> y <code>@total INT OUTPUT</code>. Debe dejar en <code>@total</code> cuántos Pokémon tiene ese entrenador. No devuelve ninguna tabla.`,
+  q:`Crea el procedimiento <code>TotalPokemon</code> con <code>@curp CHAR(18)</code> y <code>@total INT OUTPUT</code>. Debe dejar en <code>@total</code> cuántas filas de la tabla <code>Pokemon</code> tienen <code>curp_entrenador</code> = <code>@curp</code>. No devuelve ninguna tabla.`,
   pista:`<code>SELECT @total = COUNT(*) FROM Pokemon WHERE curp_entrenador = @curp;</code>. Para probarlo: <code>DECLARE @t INT; EXEC TotalPokemon '…', @t OUTPUT; SELECT @t;</code>`,
   sol:`CREATE PROCEDURE TotalPokemon
   @curp  CHAR(18),
@@ -2496,7 +2496,7 @@ END`,
     { l:'Red, pasando los parámetros por nombre', sql:"DECLARE @t INT;\nEXEC TotalPokemon @total = @t OUTPUT, @curp = 'REPA170707HPLRRS07';\nSELECT @t AS total;", e:'ok' }
   ]},
 { id:'P7', b:'proc', ds:'pokemon', tipo:'proc', t:'UPDATE con tope',
-  q:`Crea <b>Entrenar</b> con <code>@id INT</code> y <code>@niveles INT</code>. Sube <code>@niveles</code> al Pokémon con ese id, sin pasar de 100. Si el Pokémon no existe, avisa con un error.`,
+  q:`Crea el procedimiento <code>Entrenar</code> con <code>@id INT</code> y <code>@niveles INT</code>. Debe sumar <code>@niveles</code> al <code>nivel</code> de la fila de la tabla <code>Pokemon</code> con ese <code>id</code>, sin pasar de 100. Si no existe una fila con ese <code>id</code>, avisa con un error.`,
   pista:`El tope sale con <code>CASE WHEN nivel + @niveles &gt; 100 THEN 100 ELSE nivel + @niveles END</code>. Para el error: <code>IF NOT EXISTS (…)</code>, o revisar <code>@@ROWCOUNT = 0</code> después del UPDATE.`,
   sol:`CREATE PROCEDURE Entrenar
   @id      INT,
@@ -2519,7 +2519,7 @@ END`,
     { l:'EXEC Entrenar 99, 5 (no existe)', sql:"EXEC Entrenar 99, 5;\nGO\nSELECT SUM(nivel) AS suma FROM Pokemon;", e:'error' }
   ]},
 { id:'P8', b:'proc', ds:'tienda', tipo:'proc', t:'Agregar una línea a la factura',
-  q:`Base Tienda. Crea <b>AgregarLinea</b> con <code>@IDFactura INT</code>, <code>@IDProducto INT</code> y <code>@Cantidad INT</code>. Debe insertar la línea en FacturaDetalle con el <code>Precio</code> tomado de <code>Producto.PrecioUnitario</code>, <code>TotalLinea</code> = cantidad × precio y <code>Descuento</code> 0. Después recalcula <code>Subtotal</code> (suma de sus líneas), <code>Iva</code> (16%) y <code>Total</code> de esa factura.`,
+  q:`Base Tienda. Crea el procedimiento <code>AgregarLinea</code> con <code>@IDFactura INT</code>, <code>@IDProducto INT</code> y <code>@Cantidad INT</code>. Debe insertar una fila en <code>FacturaDetalle</code> (columnas <code>IDFactura</code>, <code>IDProducto</code>, <code>Cantidad</code>, <code>Precio</code>, <code>TotalLinea</code>, <code>Descuento</code>) con <code>Precio</code> = el <code>PrecioUnitario</code> de ese producto en la tabla <code>Producto</code>, <code>TotalLinea</code> = <code>Cantidad * Precio</code> y <code>Descuento</code> = 0. Después actualiza esa factura en <code>FacturaEncabezado</code>: <code>Subtotal</code> = suma de sus <code>TotalLinea</code>, <code>Iva</code> = 16% del subtotal y <code>Total</code> = subtotal + IVA.`,
   pista:`<code>DECLARE @Precio MONEY; SELECT @Precio = PrecioUnitario FROM Producto WHERE IDProducto = @IDProducto;</code> Luego el INSERT, y los dos UPDATE del LAB pero con <code>WHERE IDFactura = @IDFactura</code>.`,
   sol:`CREATE PROCEDURE AgregarLinea
   @IDFactura  INT,
@@ -2548,7 +2548,7 @@ END`,
     { l:'Un producto que ya está en la factura 2 (debe fallar sin cambiar el subtotal)', sql:"EXEC AgregarLinea 2, 2, 1;\nGO\nSELECT Subtotal FROM FacturaEncabezado WHERE IDFactura = 2;", e:'error' }
   ]},
 { id:'P9', b:'proc', ds:'tienda', tipo:'proc', t:'Transacción con TRY…CATCH',
-  q:`Base Tienda. Crea <b>CancelarFactura</b> con <code>@IDFactura INT</code>. Si la factura no existe, avisa con un error. Si existe, borra su detalle y su encabezado dentro de una transacción, con TRY…CATCH: si algo falla, deshaz todo y vuelve a lanzar el error.`,
+  q:`Base Tienda. Crea el procedimiento <code>CancelarFactura</code> con <code>@IDFactura INT</code>. Si esa factura no existe en <code>FacturaEncabezado</code>, avisa con un error. Si existe, borra sus filas de <code>FacturaDetalle</code> y su fila de <code>FacturaEncabezado</code> dentro de una transacción con TRY…CATCH: si algo falla, deshaz todo con ROLLBACK y vuelve a lanzar el error.`,
   pista:`<code>BEGIN TRY BEGIN TRANSACTION; DELETE … ; DELETE … ; COMMIT TRANSACTION; END TRY BEGIN CATCH ROLLBACK TRANSACTION; THROW; END CATCH</code>. El orden de los DELETE sigue siendo detalle primero.`,
   sol:`CREATE PROCEDURE CancelarFactura
   @IDFactura INT
@@ -2576,7 +2576,7 @@ END`,
     { l:'EXEC CancelarFactura 9 (no existe)', sql:"EXEC CancelarFactura 9;\nGO\nSELECT COUNT(*) AS facturas FROM FacturaEncabezado;", e:'error' }
   ]},
 { id:'P10', b:'proc', ds:'tienda', tipo:'proc', t:'Reporte por cliente',
-  q:`Base Tienda. Crea <b>VentasPorCliente</b> con <code>@IDCliente INT</code>. Devuelve una fila: <code>Nombre</code> del cliente, número de facturas y suma de sus <code>Total</code>. Si no tiene facturas, debe salir igual, con 0 facturas y total 0.`,
+  q:`Base Tienda. Crea el procedimiento <code>VentasPorCliente</code> con <code>@IDCliente INT</code>. Debe devolver una fila con 3 columnas: el <code>Nombre</code> del cliente (tabla <code>Cliente</code>), cuántas facturas tiene en <code>FacturaEncabezado</code> y la suma de su columna <code>Total</code>. Si no tiene facturas, la fila sale igual, con 0 facturas y total 0.`,
   pista:`LEFT JOIN de Cliente a FacturaEncabezado, <code>COUNT(F.IDFactura)</code> y <code>COALESCE(SUM(F.Total), 0)</code> (o <code>ISNULL</code>). Filtra por el cliente en el WHERE y agrupa por él.`,
   sol:`CREATE PROCEDURE VentasPorCliente
   @IDCliente INT
@@ -3847,7 +3847,7 @@ function exCard(e, pre){
     (e.alg ? '<div class="alg">' + e.alg + '</div>' : '') +
     '<div class="ex-q">' + e.q + '</div>' +
     '<div class="editor-box"><textarea class="editor" id="' + pre + 'ed-' + e.id + '" wrap="off" spellcheck="false" aria-label="Tu SQL para ' + e.id + '"></textarea></div>' +
-    '<div class="ex-actions"><button class="btn primary" type="button" data-act="check">Revisar</button><button class="btn" type="button" data-act="run">Solo ejecutar</button><button class="btn" type="button" data-act="hint">Pista</button><button class="btn" type="button" data-act="expected">' + (e.probes ? 'Qué se revisa' : 'Resultado esperado') + '</button><button class="btn" type="button" data-act="sol">Solución</button></div>' +
+    '<div class="ex-actions"><button class="btn primary" type="button" data-act="check">Revisar</button><button class="btn" type="button" data-act="run">Solo ejecutar</button><button class="btn" type="button" data-act="tablas">Tablas</button><button class="btn" type="button" data-act="hint">Pista</button><button class="btn" type="button" data-act="expected">' + (e.probes || e.tipo === 'xr' ? 'Qué se revisa' : 'Resultado esperado') + '</button><button class="btn" type="button" data-act="sol">Solución</button></div>' +
     '<div class="msg info" data-hint hidden><span class="tag">Pista</span>' + e.pista + '</div>' +
     '<div class="ex-out"></div></article>';
 }
@@ -3873,6 +3873,12 @@ async function onAct(e, card, act){
   out.innerHTML = '<div class="msg">Trabajando…</div>';
   try { await READY; } catch (err) { out.innerHTML = '<div class="msg err"><span class="tag">Error</span>' + esc(err.message) + '</div>'; return; }
   if (act === 'run') { const db = makeDB(e.ds, e.setup); const r = execAll(db, ta.value); db.close(); out.innerHTML = resultsHTML(r); return; }
+  if (act === 'tablas') {
+    const db = makeDB(e.ds, e.setup);
+    const txt = e.tipo === 'xr' ? 'Este examen empieza con la base vacía: las tablas las creas tú.' : e.ds === 'vacia' && !e.setup ? 'Este ejercicio empieza con la base vacía: la tabla la creas tú.' : 'Así está la base ' + DS_LABEL[e.ds] + ' al empezar este ejercicio. PK es llave primaria, FK es llave foránea (con la tabla y columna a la que apunta) y NN es obligatoria.';
+    out.innerHTML = '<div class="msg info"><span class="tag">Tablas</span>' + txt + '</div>' + (e.tipo === 'xr' || (e.ds === 'vacia' && !e.setup) ? '' : '<div class="schema">' + schemaHTML(db) + '</div>');
+    db.close(); return;
+  }
   if (act === 'expected') {
     if (e.tipo === 'xr') { out.innerHTML = '<div class="msg info"><span class="tag">Se revisa</span>Tu script corre en una base vacía y después lo pruebo con datos de ejemplo:</div><ul class="probes">' + xrChecklist(e).map(t => '<li>' + esc(t) + '</li>').join('') + '</ul>'; return; }
     if (e.probes) { const list = e.probes.map(p => ({ p, r: runProbe(e, e.sol, p) })); out.innerHTML = '<div class="msg info"><span class="tag">Se revisa</span>' + (e.tipo === 'proc' ? 'Se crea tu procedimiento en una base limpia y se hacen estas llamadas:' : 'Después de tu código se prueba lo siguiente:') + '</div>' + probesHTML(list, true); return; }
